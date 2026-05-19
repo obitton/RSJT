@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "54329:5432"
+    environment:
+      POSTGRES_DB: rsjt_dev
+      POSTGRES_USER: rsjt
+      POSTGRES_PASSWORD: rsjt_local
+    volumes:
+      - rsjt_postgres:/var/lib/postgresql/data
+
+volumes:
+  rsjt_postgres:

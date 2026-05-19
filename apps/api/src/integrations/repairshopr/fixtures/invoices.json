@@ -1,0 +1,24 @@
+{
+  "invoices": [
+    {
+      "id": 601,
+      "customer_id": 101,
+      "contact_id": 201,
+      "ticket_id": 401,
+      "customer_business_then_name": "Sam Rivera",
+      "number": "INV-601",
+      "subtotal": "200.0",
+      "total": "200.0",
+      "amount_paid": 200,
+      "balance_due": 0,
+      "is_paid": true,
+      "verified_paid": true,
+      "created_at": "2026-05-06T12:00:00Z",
+      "updated_at": "2026-05-06T12:00:00Z"
+    }
+  ],
+  "meta": {
+    "total_pages": 1,
+    "page": 1
+  }
+}

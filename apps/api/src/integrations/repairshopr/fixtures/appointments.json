@@ -1,0 +1,23 @@
+{
+  "appointments": [
+    {
+      "appointment": {
+        "id": 501,
+        "summary": "Washer diagnosis",
+        "description": "Fixture appointment",
+        "customer_id": 101,
+        "ticket_id": 401,
+        "start_at": "2026-05-05T14:00:00Z",
+        "end_at": "2026-05-05T15:00:00Z",
+        "created_at": "2026-05-04T12:00:00Z",
+        "updated_at": "2026-05-04T12:00:00Z"
+      }
+    }
+  ],
+  "meta": {
+    "total_pages": 1,
+    "total_entries": 1,
+    "per_page": 25,
+    "page": 1
+  }
+}

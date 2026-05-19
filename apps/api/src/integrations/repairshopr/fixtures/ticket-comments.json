@@ -1,0 +1,19 @@
+{
+  "comments": [
+    {
+      "id": 801,
+      "ticket_id": 401,
+      "subject": "Fixture update",
+      "body": "Technician confirmed diagnosis.",
+      "hidden": false,
+      "user_id": 901,
+      "created_at": "2026-05-06T13:00:00Z",
+      "updated_at": "2026-05-06T13:00:00Z"
+    }
+  ],
+  "meta": {
+    "total_pages": 1,
+    "page": 1,
+    "per_page": 25
+  }
+}

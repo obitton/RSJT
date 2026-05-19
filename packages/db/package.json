@@ -1,0 +1,29 @@
+{
+  "name": "@rsjt/db",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rsjt/shared": "workspace:*",
+    "argon2": "^0.41.1",
+    "drizzle-orm": "^0.43.1",
+    "pg": "^8.15.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.18",
+    "@types/pg": "^8.11.14",
+    "drizzle-kit": "^0.31.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

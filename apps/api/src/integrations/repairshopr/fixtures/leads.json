@@ -1,0 +1,29 @@
+{
+  "leads": [
+    {
+      "id": 301,
+      "first_name": "Sam",
+      "last_name": "Rivera",
+      "business_then_name": "Sam Rivera",
+      "email": "sam@example.invalid",
+      "phone": "555-0101",
+      "mobile": "555-0102",
+      "address": "100 Local St",
+      "city": "Brooklyn",
+      "state": "NY",
+      "zip": "11201",
+      "status": "New",
+      "ticket_id": null,
+      "customer_id": 101,
+      "contact_id": 201,
+      "created_at": "2026-05-03T12:00:00Z",
+      "updated_at": "2026-05-03T12:30:00Z"
+    }
+  ],
+  "meta": {
+    "total_pages": 1,
+    "total_entries": 1,
+    "per_page": 25,
+    "page": 1
+  }
+}
