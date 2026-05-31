@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-18
 **Estimated Total Story Points:** 122
-**Status:** Implementation in progress locally through RSJT-006
+**Status:** Implementation in progress locally through RSJT-010
 
 ## Executive Summary
 
@@ -465,55 +465,55 @@ Create the Expo mobile app shell using Expo Router, role-aware navigation, and A
 - `apps/mobile/src/components/*`
 - `apps/mobile/app.json`
 
-### RSJT-010: Ilya Job Update UI
+### RSJT-010: Tech Job Update UI
 
 **Story Points:** 5
 
 **Description:**
-Build the mobile-first UI for Ilya to submit terse updates, review extracted facts, answer missing-field prompts, and see active jobs.
+Build the mobile-first UI for the tech role to submit terse updates, review extracted facts, answer missing-field prompts, and see active jobs.
 
 **Tasks:**
 
-- Add chat-like update composer for internal job updates.
-- Show extracted facts with confidence labels and source message.
-- Add quick actions for complete, charge, expense, customer confirm, and follow-up needed.
-- Add active and unresolved job lists for Ilya.
-- Connect update submission to extraction and matching APIs.
+- [x] Add chat-like update composer for internal job updates.
+- [x] Show extracted facts with confidence labels and source message.
+- [x] Add quick actions for missing-field prompts and fact confirmation.
+- [x] Add active and unresolved job lists for the tech role.
+- [x] Connect update submission to extraction API and job feed API.
 
 **Acceptance Criteria:**
 
-- [ ] Ilya can submit a short natural-language update from the app.
-- [ ] Extracted fields and missing prompts appear after processing.
-- [ ] Ilya can correct or confirm extracted facts.
-- [ ] Unmatched updates remain visible until resolved.
+- [x] The tech role can submit a short natural-language update from the app.
+- [x] Extracted fields and missing prompts appear after processing.
+- [x] The tech role can correct or confirm extracted facts.
+- [x] Unmatched updates remain visible until resolved.
 
 **Dependencies:** RSJT-006, RSJT-007, RSJT-009
 
 **Files:**
 
-- `apps/mobile/app/(ilya)/*`
+- `apps/mobile/app/(tech)/*`
 - `apps/mobile/src/features/updates/*`
 - `apps/mobile/src/features/jobs/*`
 - `apps/mobile/src/api/updates.ts`
 
-### RSJT-011: Owner Dashboard
+### RSJT-011: Manager Dashboard
 
 **Story Points:** 5
 
 **Description:**
-Create the owner dashboard for open leads, scheduled jobs, completed jobs, unmatched updates, takeover state, revenue, expenses, profit, and split amounts.
+Create the manager dashboard for open leads, scheduled jobs, completed jobs, unmatched updates, takeover state, revenue, expenses, profit, and split amounts.
 
 **Tasks:**
 
 - Add dashboard API aggregation.
-- Build owner tabs for open, scheduled, completed, unmatched, takeover, and payout-ready views.
+- Build manager tabs for open, scheduled, completed, unmatched, takeover, and payout-ready views.
 - Add job detail drill-in with RepairShopr references and source evidence.
 - Add filters for job state, payout state, and split category.
 - Add dashboard loading, empty, and error states.
 
 **Acceptance Criteria:**
 
-- [ ] Owner can see unresolved items separate from reconciled jobs.
+- [ ] Manager can see unresolved items separate from reconciled jobs.
 - [ ] Job rows show customer, state, RepairShopr link, gross, expenses, profit, split category, and payout amounts.
 - [ ] Takeover-active conversations are visible.
 - [ ] Dashboard data comes from API, not local mock state.
@@ -524,7 +524,7 @@ Create the owner dashboard for open leads, scheduled jobs, completed jobs, unmat
 
 - `apps/api/src/routes/dashboard.ts`
 - `apps/api/src/services/dashboard-service.ts`
-- `apps/mobile/app/(owner)/*`
+- `apps/mobile/src/app/(manager)/manager/index.tsx`
 - `apps/mobile/src/features/dashboard/*`
 
 ### RSJT-012: Twilio Webhook Intake

@@ -1,44 +1,48 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "@/auth/auth-context";
+import { Screen } from "@/components/screen";
+import { Redirect } from "expo-router";
+import { StyleSheet, Text } from "react-native";
 
-export default function HomeScreen() {
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={styles.content}
-    >
-      <View style={styles.panel}>
+export default function IndexScreen() {
+  const { isLoading, session } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Screen contentStyle={styles.centered}>
         <Text selectable style={styles.title}>
           RSJT
         </Text>
         <Text selectable style={styles.body}>
-          Local mobile shell for the service referral ops agent.
+          Loading session
         </Text>
-      </View>
-    </ScrollView>
-  );
+      </Screen>
+    );
+  }
+
+  if (!session) {
+    return <Redirect href="/sign-in" />;
+  }
+
+  if (session.user.role === "manager") {
+    return <Redirect href="/manager" />;
+  }
+
+  return <Redirect href="/tech" />;
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
+  centered: {
     justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#F7F8FA",
-  },
-  panel: {
-    gap: 8,
-    padding: 20,
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
   },
   title: {
     color: "#111827",
     fontSize: 28,
     fontWeight: "700",
+    textAlign: "center",
   },
   body: {
     color: "#4B5563",
     fontSize: 16,
-    lineHeight: 22,
+    textAlign: "center",
   },
 });

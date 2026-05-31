@@ -39,6 +39,29 @@ export const splitCategory = pgEnum("split_category", [
   "customer_service_heavy",
 ]);
 
+export const customerIntakeState = pgEnum("customer_intake_state", [
+  "unknown",
+  "identifying",
+  "collecting",
+  "matched",
+  "review_ready",
+  "blocked",
+]);
+
+export const schedulingProposalState = pgEnum("scheduling_proposal_state", [
+  "pending",
+  "approved",
+  "rejected",
+  "expired",
+]);
+
+export const writebackExecutionState = pgEnum("writeback_execution_state", [
+  "ready",
+  "succeeded",
+  "failed",
+  "blocked",
+]);
+
 export const profitBasis = pgEnum("profit_basis", [
   "reported_profit",
   "charge_minus_reported_expenses",
@@ -89,6 +112,24 @@ export const conversations = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     externalPhone: text("external_phone"),
     takeoverActive: boolean("takeover_active").notNull().default(false),
+    takeoverStartedAt: timestamp("takeover_started_at", { withTimezone: true }),
+    takeoverStartedByUserId: uuid("takeover_started_by_user_id"),
+    intakeState: customerIntakeState("intake_state")
+      .notNull()
+      .default("unknown"),
+    customerName: text("customer_name"),
+    customerEmail: text("customer_email"),
+    serviceAddress: text("service_address"),
+    problemDescription: text("problem_description"),
+    preferredTiming: text("preferred_timing"),
+    blockedReason: text("blocked_reason"),
+    spamScore: integer("spam_score").notNull().default(0),
+    matchedRepairShoprEntityType: text("matched_repairshopr_entity_type"),
+    matchedRepairShoprId: text("matched_repairshopr_id"),
+    matchedRepairShoprDisplayLabel: text("matched_repairshopr_display_label"),
+    matchedConfidenceBand: text("matched_confidence_band"),
+    lastInboundMessageId: uuid("last_inbound_message_id"),
+    lastInboundAt: timestamp("last_inbound_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -98,6 +139,13 @@ export const conversations = pgTable(
   },
   (table) => [
     index("conversations_external_phone_idx").on(table.externalPhone),
+    index("conversations_intake_state_idx").on(table.intakeState),
+    index("conversations_last_inbound_at_idx").on(table.lastInboundAt),
+    index("conversations_matched_repairshopr_idx").on(
+      table.matchedRepairShoprEntityType,
+      table.matchedRepairShoprId,
+    ),
+    index("conversations_takeover_active_idx").on(table.takeoverActive),
   ],
 );
 
@@ -143,6 +191,10 @@ export const messages = pgTable(
     authorRole: text("author_role"),
     body: text("body").notNull(),
     twilioMessageSid: text("twilio_message_sid"),
+    externalStatus: text("external_status"),
+    sentByUserId: uuid("sent_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -151,6 +203,51 @@ export const messages = pgTable(
     index("messages_conversation_id_idx").on(table.conversationId),
     index("messages_job_id_idx").on(table.jobId),
     index("messages_twilio_sid_idx").on(table.twilioMessageSid),
+    index("messages_external_status_idx").on(table.externalStatus),
+    index("messages_conversation_created_at_idx").on(
+      table.conversationId,
+      table.createdAt,
+    ),
+  ],
+);
+
+export const messageMedia = pgTable(
+  "message_media",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => messages.id, { onDelete: "cascade" }),
+    mediaIndex: integer("media_index").notNull(),
+    contentType: text("content_type").notNull(),
+    url: text("url").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("message_media_message_id_idx").on(table.messageId),
+    uniqueIndex("message_media_message_index_unique").on(
+      table.messageId,
+      table.mediaIndex,
+    ),
+  ],
+);
+
+export const messagingWebhookEvents = pgTable(
+  "messaging_webhook_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventType: text("event_type").notNull(),
+    twilioMessageSid: text("twilio_message_sid"),
+    payload: jsonb("payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("messaging_webhook_events_sid_idx").on(table.twilioMessageSid),
+    index("messaging_webhook_events_type_idx").on(table.eventType),
   ],
 );
 
@@ -213,19 +310,30 @@ export const approvals = pgTable(
     kind: text("kind").notNull(),
     state: approvalState("state").notNull().default("pending"),
     risk: text("risk").notNull(),
+    requiredRole: userRole("required_role").notNull(),
+    originalPayload: jsonb("original_payload").notNull(),
     payload: jsonb("payload").notNull(),
     evidence: jsonb("evidence").notNull(),
-    approvedByUserId: uuid("approved_by_user_id").references(() => users.id, {
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    decidedByUserId: uuid("decided_by_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
     decidedAt: timestamp("decided_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     index("approvals_state_idx").on(table.state),
     index("approvals_job_id_idx").on(table.jobId),
+    index("approvals_kind_idx").on(table.kind),
+    index("approvals_risk_idx").on(table.risk),
+    index("approvals_required_role_idx").on(table.requiredRole),
   ],
 );
 
@@ -300,6 +408,100 @@ export const reminders = pgTable(
       .defaultNow(),
   },
   (table) => [index("reminders_unresolved_idx").on(table.resolvedAt)],
+);
+
+export const schedulingProposals = pgTable(
+  "scheduling_proposals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    jobId: uuid("job_id").references(() => jobs.id, { onDelete: "set null" }),
+    state: schedulingProposalState("state").notNull().default("pending"),
+    preferredWindowText: text("preferred_window_text").notNull(),
+    startAt: timestamp("start_at", { withTimezone: true }),
+    endAt: timestamp("end_at", { withTimezone: true }),
+    customerMessageBody: text("customer_message_body").notNull(),
+    repairShoprAppointmentPayload: jsonb(
+      "repairshopr_appointment_payload",
+    ).notNull(),
+    sourceEvidence: jsonb("source_evidence").notNull(),
+    customerMessageApprovalId: uuid("customer_message_approval_id").references(
+      () => approvals.id,
+      { onDelete: "set null" },
+    ),
+    appointmentApprovalId: uuid("appointment_approval_id").references(
+      () => approvals.id,
+      { onDelete: "set null" },
+    ),
+    decidedByUserId: uuid("decided_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("scheduling_proposals_state_idx").on(table.state),
+    index("scheduling_proposals_conversation_id_idx").on(table.conversationId),
+    index("scheduling_proposals_job_id_idx").on(table.jobId),
+    index("scheduling_proposals_message_approval_idx").on(
+      table.customerMessageApprovalId,
+    ),
+    index("scheduling_proposals_appointment_approval_idx").on(
+      table.appointmentApprovalId,
+    ),
+  ],
+);
+
+export const writebackExecutions = pgTable(
+  "writeback_executions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    approvalId: uuid("approval_id")
+      .notNull()
+      .references(() => approvals.id, { onDelete: "cascade" }),
+    jobId: uuid("job_id").references(() => jobs.id, { onDelete: "set null" }),
+    kind: text("kind").notNull(),
+    state: writebackExecutionState("state").notNull().default("ready"),
+    targetKind: text("target_kind").notNull(),
+    action: text("action").notNull(),
+    requestPayload: jsonb("request_payload").notNull(),
+    responsePayload: jsonb("response_payload"),
+    errorMessage: text("error_message"),
+    repairShoprEntityType: text("repairshopr_entity_type"),
+    repairShoprId: text("repairshopr_id"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    lastAttemptedAt: timestamp("last_attempted_at", { withTimezone: true }),
+    executedByUserId: uuid("executed_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    succeededAt: timestamp("succeeded_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("writeback_executions_approval_unique").on(table.approvalId),
+    index("writeback_executions_state_idx").on(table.state),
+    index("writeback_executions_job_id_idx").on(table.jobId),
+    index("writeback_executions_target_action_idx").on(
+      table.targetKind,
+      table.action,
+    ),
+    index("writeback_executions_repairshopr_ref_idx").on(
+      table.repairShoprEntityType,
+      table.repairShoprId,
+    ),
+  ],
 );
 
 export const auditEvents = pgTable(

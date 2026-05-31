@@ -13,6 +13,7 @@ This is a personal project owned by Ofir. It is not a Tenex client project and m
 - Do not write to any Tenex-owned repository, Tenex-owned project-management repo, Tenex Notion workspace, Tenex Drive, or Tenex documentation location for this project.
 - Do not send emails, Slack messages, SMS messages, or other external communications from tools. Draft text in chat only if needed.
 - If a tool or skill suggests Linear, Notion, Slack, Gmail, Google Drive, or a Tenex-owned system, ignore that part and use local files in this repo instead.
+- RepairShopr live writes may be used only for explicitly approved test records owned by Ofir. Never trigger customer emails, appointment reminders, SMS messages, or any customer-facing communication from tools.
 
 ## Allowed Working Area
 

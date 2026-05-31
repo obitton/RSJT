@@ -15,6 +15,48 @@
       "when": 1779201219299,
       "tag": "0001_striped_frank_castle",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779455757000,
+      "tag": "0002_approval_staged_change_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780006800000,
+      "tag": "0003_messaging_webhook_intake",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780006900000,
+      "tag": "0004_customer_intake_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780007000000,
+      "tag": "0005_live_takeover_outbound_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780007100000,
+      "tag": "0006_scheduling_proposals",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780007200000,
+      "tag": "0007_writeback_executions",
+      "breakpoints": true
     }
   ]
 }

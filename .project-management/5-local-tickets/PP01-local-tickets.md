@@ -76,176 +76,176 @@
 - [x] Add match confirmation APIs.
 - [x] Test high, medium, low, and conflicting matches.
 
-### RSJT-007: Ilya Update Extraction Service
+### RSJT-007: Tech Update Extraction Service
 
 **Story Points:** 8
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-002, RSJT-003, RSJT-004
 
-- [ ] Add extraction adapter interface.
-- [ ] Extract customer hint, work, duration, charge, expenses, completion, scheduling notes, and follow-up needs.
-- [ ] Persist facts with source evidence and confidence.
-- [ ] Generate missing-field prompts.
-- [ ] Test with deterministic fixtures.
+- [x] Add extraction adapter interface.
+- [x] Extract customer hint, work, duration, charge, expenses, completion, scheduling notes, and follow-up needs.
+- [x] Persist facts with source evidence and confidence.
+- [x] Generate missing-field prompts.
+- [x] Test with deterministic fixtures.
 
 ### RSJT-008: Approval And Staged Change Engine
 
 **Story Points:** 8
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-003, RSJT-004
 
-- [ ] Add staged change lifecycle APIs.
-- [ ] Track actor, role, evidence, risk, and payload.
-- [ ] Add approval inbox filters.
-- [ ] Add audit events.
-- [ ] Test role-specific approval permissions.
+- [x] Add staged change lifecycle APIs.
+- [x] Track actor, role, evidence, risk, and payload.
+- [x] Add approval inbox filters.
+- [x] Add audit events.
+- [x] Test role-specific approval permissions.
 
 ### RSJT-009: Expo App Scaffold And Auth Shell
 
 **Story Points:** 5
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-004
 
-- [ ] Re-check current Expo docs before scaffolding.
-- [ ] Scaffold Expo Router app.
-- [ ] Add manager, tech, auth, and shared route groups.
-- [ ] Add TanStack Query and typed `fetch` client.
-- [ ] Store session tokens in SecureStore.
+- [x] Re-check current Expo docs before scaffolding.
+- [x] Scaffold Expo Router app.
+- [x] Add manager, tech, auth, and shared route groups.
+- [x] Add TanStack Query and typed `fetch` client.
+- [x] Store session tokens in SecureStore.
 
-### RSJT-010: Ilya Job Update UI
+### RSJT-010: Tech Job Update UI
 
 **Story Points:** 5
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-006, RSJT-007, RSJT-009
 
-- [ ] Build chat-like update composer.
-- [ ] Show extracted facts, confidence, and source message.
-- [ ] Add quick actions for missing fields.
-- [ ] Add active and unresolved job lists.
-- [ ] Connect UI to update APIs.
+- [x] Build chat-like update composer.
+- [x] Show extracted facts, confidence, and source message.
+- [x] Add quick actions for missing fields.
+- [x] Add active and unresolved job lists.
+- [x] Connect UI to update APIs.
 
-### RSJT-011: Owner Dashboard
+### RSJT-011: Manager Dashboard
 
 **Story Points:** 5
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-006, RSJT-008, RSJT-009
 
-- [ ] Add dashboard aggregation API.
-- [ ] Build owner views for open, scheduled, completed, unmatched, takeover, and payout-ready work.
-- [ ] Add job detail drill-in.
-- [ ] Add filters and states.
-- [ ] Verify unresolved items are separate from reconciled jobs.
+- [x] Add dashboard aggregation API.
+- [x] Build manager views for open, scheduled, completed, unmatched, takeover, and payout-ready work.
+- [x] Add job detail drill-in.
+- [x] Add filters and states.
+- [x] Verify unresolved items are separate from reconciled jobs.
 
 ### RSJT-012: Twilio Webhook Intake
 
 **Story Points:** 8
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-003, RSJT-004
 
-- [ ] Add inbound and status callback webhook routes.
-- [ ] Validate Twilio request signatures.
-- [ ] Parse form-encoded SMS/MMS parameters.
-- [ ] Persist messages and media metadata.
-- [ ] Test with fixture payloads.
+- [x] Add inbound and status callback webhook routes.
+- [x] Validate Twilio request signatures.
+- [x] Parse form-encoded SMS/MMS parameters.
+- [x] Persist messages and media metadata.
+- [x] Test with fixture payloads.
 
 ### RSJT-013: Customer Intake State Machine And Spam Gate
 
 **Story Points:** 8
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-006, RSJT-008, RSJT-012
 
-- [ ] Implement unknown, identifying, collecting, matched, review-ready, and blocked states.
-- [ ] Ask only for missing customer intake fields.
-- [ ] Add basic abuse controls.
-- [ ] Short-circuit known RepairShopr customer fields.
-- [ ] Stage lead or customer writeback only after minimum data and spam checks.
+- [x] Implement unknown, identifying, collecting, matched, review-ready, and blocked states.
+- [x] Ask only for missing customer intake fields.
+- [x] Add basic abuse controls.
+- [x] Short-circuit known RepairShopr customer fields.
+- [x] Stage lead or customer writeback only after minimum data and spam checks.
 
 ### RSJT-014: Live Takeover And Outbound Messaging
 
 **Story Points:** 8
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-011, RSJT-012, RSJT-013
 
-- [ ] Add takeover state API.
-- [ ] Build Ilya conversation screen.
-- [ ] Send Ilya outbound messages through Twilio.
-- [ ] Pause AI replies while takeover is active.
-- [ ] Show takeover state on owner dashboard.
+- [x] Add takeover state API.
+- [x] Build tech conversation screen.
+- [x] Send tech outbound messages through Twilio (gated by MESSAGING_OUTBOUND_ENABLED).
+- [x] Pause AI replies while takeover is active.
+- [x] Show takeover state on manager dashboard.
 
 ### RSJT-015: Scheduling Proposal And Approval
 
 **Story Points:** 5
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-008, RSJT-013, RSJT-014
 
-- [ ] Extract scheduling preferences.
-- [ ] Stage customer-facing scheduling messages.
-- [ ] Stage RepairShopr appointment proposals.
-- [ ] Build Ilya approval UI.
-- [ ] Block unapproved scheduling commitments.
+- [x] Extract scheduling preferences.
+- [x] Stage customer-facing scheduling messages.
+- [x] Stage RepairShopr appointment proposals.
+- [x] Build tech approval UI.
+- [x] Block unapproved scheduling commitments.
 
 ### RSJT-016: RepairShopr Writeback Execution
 
 **Story Points:** 8
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-005, RSJT-008, RSJT-015
 
-- [ ] Add approved-write-only RepairShopr write client.
-- [ ] Execute customer, lead, ticket, comment, and appointment writebacks.
-- [ ] Store request, response, and error audit events.
-- [ ] Add retry and manual retry handling.
-- [ ] Test with fixtures only.
+- [x] Add approved-write-only RepairShopr write client.
+- [x] Execute customer, lead, ticket, comment, and appointment writebacks.
+- [x] Store request, response, and error audit events.
+- [x] Add retry and manual retry handling.
+- [x] Test with fixtures only.
 
 ### RSJT-017: Expenses, Profit, And Split Review
 
 **Story Points:** 5
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-007, RSJT-008, RSJT-011
 
-- [ ] Add expense APIs and mobile forms.
-- [ ] Add owner review and override for Ilya-reported charge, expense, and profit inputs.
-- [ ] Calculate profit from Ilya-reported profit when present, otherwise from charge minus reported expenses.
-- [ ] Apply 30/70, 20/80, and 50/50 splits.
-- [ ] Add split override audit trail.
+- [x] Add expense APIs and mobile forms.
+- [x] Add manager review and override for tech-reported charge, expense, and profit inputs.
+- [x] Calculate profit from tech-reported profit when present, otherwise from charge minus reported expenses.
+- [x] Apply 30/70, 20/80, and 50/50 splits.
+- [x] Add split override audit trail.
 
 ### RSJT-018: Closeout Reminders
 
 **Story Points:** 5
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-010, RSJT-011, RSJT-017
 
-- [ ] Add reminder rules for missing completion, charge/profit basis, expense detail when needed, and follow-up.
-- [ ] Add local API job runner.
-- [ ] Build Ilya reminder inbox.
-- [ ] Add owner stale job visibility.
-- [ ] Test reminder generation.
+- [x] Add reminder rules for missing completion, charge/profit basis, expense detail when needed, and follow-up.
+- [x] Add local API job runner.
+- [x] Build tech reminder inbox.
+- [x] Add manager stale job visibility.
+- [x] Test reminder generation.
 
 ### RSJT-019: Contact Cards
 
 **Story Points:** 3
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-011, RSJT-013
 
-- [ ] Generate vCards for confirmed customers.
-- [ ] Add contact card endpoint.
-- [ ] Add owner preview and add-contact action.
-- [ ] Link availability to customer identification state.
+- [x] Generate vCards for confirmed customers.
+- [x] Add contact card endpoint.
+- [x] Add manager preview and share action.
+- [x] Link availability to customer identification state.
 
 ### RSJT-020: End-To-End Smoke And Release Hardening
 
 **Story Points:** 5
-**Status:** Not started
+**Status:** Done
 **Dependencies:** RSJT-012, RSJT-016, RSJT-017, RSJT-018, RSJT-019
 
-- [ ] Add fixture workflow covering intake, matching, approval, staging, Ilya update, expense entry, and payout readiness.
-- [ ] Add API integration tests and mobile smoke tests.
-- [ ] Ensure tests avoid live Twilio, RepairShopr, and AI calls by default.
-- [ ] Document local runbook and first release checklist.
-- [ ] Verify docs do not reference Tenex-owned systems.
+- [x] Add fixture workflow covering intake, matching, approval, staging, tech update, expense entry, and payout readiness.
+- [x] Add API integration tests and mobile smoke tests.
+- [x] Ensure tests avoid live Twilio, RepairShopr, and AI calls by default.
+- [x] Document local runbook and first release checklist.
+- [x] Verify docs do not reference Tenex-owned systems.
 
 ## Gate Before Code
 
-- [ ] PP01 accepted by owner.
+- [ ] PP01 accepted by project decision maker.
 - [ ] Resolved product decisions confirmed in PP01.
 - [ ] Implementation plans created for RSJT-001 through RSJT-004.
 - [ ] Implementation plans reviewed to 90%+.

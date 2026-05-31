@@ -1,6 +1,7 @@
 import argon2 from "argon2";
+import { eq } from "drizzle-orm";
 import { createDb, createPool } from "./connection.js";
-import { users } from "./schema.js";
+import { conversations, jobs, messages, users } from "./schema.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -29,6 +30,126 @@ await db
       passcodeHash: await argon2.hash(
         process.env.LOCAL_TECH_PASSCODE ?? "tech-dev",
       ),
+    },
+  ])
+  .onConflictDoNothing();
+
+await db
+  .insert(jobs)
+  .values([
+    {
+      id: "00000000-0000-4000-8000-000000010101",
+      state: "accepted",
+      customerLabel: "Local laptop repair",
+      repairShoprEntityType: "ticket",
+      repairShoprId: "local-ticket-101",
+      grossChargeCents: 18000,
+      updatedAt: new Date("2026-05-20T14:00:00.000Z"),
+    },
+    {
+      id: "00000000-0000-4000-8000-000000010102",
+      state: "scheduled",
+      customerLabel: "Scheduled onsite setup",
+      repairShoprEntityType: "ticket",
+      repairShoprId: "local-ticket-102",
+      updatedAt: new Date("2026-05-21T14:00:00.000Z"),
+    },
+    {
+      id: "00000000-0000-4000-8000-000000010103",
+      state: "unmatched",
+      customerLabel: "Unmatched walk-in update",
+      updatedAt: new Date("2026-05-22T14:00:00.000Z"),
+    },
+  ])
+  .onConflictDoNothing();
+
+const demoConversationId = "00000000-0000-4000-8000-000000020101";
+const demoInboundMessageId = "00000000-0000-4000-8000-000000020102";
+const demoConversation = {
+  id: demoConversationId,
+  externalPhone: "+15555550200",
+  takeoverActive: true,
+  takeoverStartedAt: new Date("2026-05-26T14:03:00.000Z"),
+  takeoverStartedByUserId: null,
+  intakeState: "review_ready" as const,
+  customerName: "Casey Customer",
+  customerEmail: "casey@example.com",
+  serviceAddress: "123 Main Street",
+  problemDescription: "Laptop will not charge after a liquid spill.",
+  preferredTiming: "Today after 3 PM",
+  blockedReason: null,
+  spamScore: 0,
+  matchedRepairShoprEntityType: "ticket",
+  matchedRepairShoprId: "local-ticket-101",
+  matchedRepairShoprDisplayLabel: "Local laptop repair",
+  matchedConfidenceBand: "high",
+  lastInboundMessageId: demoInboundMessageId,
+  lastInboundAt: new Date("2026-05-26T14:02:00.000Z"),
+  updatedAt: new Date("2026-05-26T14:03:00.000Z"),
+};
+
+await db
+  .insert(conversations)
+  .values(demoConversation)
+  .onConflictDoUpdate({
+    target: conversations.id,
+    set: {
+      externalPhone: demoConversation.externalPhone,
+      takeoverActive: demoConversation.takeoverActive,
+      takeoverStartedAt: demoConversation.takeoverStartedAt,
+      takeoverStartedByUserId: demoConversation.takeoverStartedByUserId,
+      intakeState: demoConversation.intakeState,
+      customerName: demoConversation.customerName,
+      customerEmail: demoConversation.customerEmail,
+      serviceAddress: demoConversation.serviceAddress,
+      problemDescription: demoConversation.problemDescription,
+      preferredTiming: demoConversation.preferredTiming,
+      blockedReason: demoConversation.blockedReason,
+      spamScore: demoConversation.spamScore,
+      matchedRepairShoprEntityType:
+        demoConversation.matchedRepairShoprEntityType,
+      matchedRepairShoprId: demoConversation.matchedRepairShoprId,
+      matchedRepairShoprDisplayLabel:
+        demoConversation.matchedRepairShoprDisplayLabel,
+      matchedConfidenceBand: demoConversation.matchedConfidenceBand,
+      lastInboundMessageId: demoConversation.lastInboundMessageId,
+      lastInboundAt: demoConversation.lastInboundAt,
+      updatedAt: demoConversation.updatedAt,
+    },
+  });
+
+await db
+  .delete(messages)
+  .where(eq(messages.conversationId, demoConversationId));
+
+await db
+  .insert(messages)
+  .values([
+    {
+      id: demoInboundMessageId,
+      conversationId: demoConversationId,
+      direction: "inbound",
+      authorRole: null,
+      body: "Hi, my laptop stopped charging after coffee spilled near the keyboard. Can someone come by today?",
+      twilioMessageSid: "SMlocaldemo001",
+      createdAt: new Date("2026-05-26T14:00:00.000Z"),
+    },
+    {
+      id: "00000000-0000-4000-8000-000000020103",
+      conversationId: demoConversationId,
+      direction: "internal",
+      authorRole: "manager",
+      body: "Matched to Local laptop repair. Needs tech response and scheduling confirmation.",
+      createdAt: new Date("2026-05-26T14:01:00.000Z"),
+    },
+    {
+      id: "00000000-0000-4000-8000-000000020104",
+      conversationId: demoConversationId,
+      direction: "outbound",
+      authorRole: "tech",
+      body: "I can take a look today after 3 PM. Please keep the laptop powered off until I arrive.",
+      externalStatus: "blocked",
+      createdAt: new Date("2026-05-26T14:03:00.000Z"),
     },
   ])
   .onConflictDoNothing();

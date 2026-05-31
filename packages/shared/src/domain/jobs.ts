@@ -55,8 +55,14 @@ export const JobSummarySchema = z.object({
   repairShoprReference: RepairShoprReferenceSchema.optional(),
 });
 
+export const JobUpdateFeedResponseSchema = z.object({
+  activeJobs: z.array(JobSummarySchema),
+  unresolvedJobs: z.array(JobSummarySchema),
+});
+
 export type JobState = z.infer<typeof JobStateSchema>;
 export type ExtractedFactType = z.infer<typeof ExtractedFactTypeSchema>;
 export type SourceEvidence = z.infer<typeof SourceEvidenceSchema>;
 export type MatchCandidate = z.infer<typeof MatchCandidateSchema>;
 export type JobSummary = z.infer<typeof JobSummarySchema>;
+export type JobUpdateFeedResponse = z.infer<typeof JobUpdateFeedResponseSchema>;

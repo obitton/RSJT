@@ -298,5 +298,7 @@ function testConfig(): ApiConfig {
     API_PORT: 47630,
     SESSION_TTL_HOURS: 720,
     REPAIRSHOPR_TIMEOUT_MS: 10000,
+    MESSAGING_CHANNEL: "whatsapp_sandbox",
+    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }
