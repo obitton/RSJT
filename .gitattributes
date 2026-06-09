@@ -1,0 +1,19 @@
+# Normalize line endings. Text files are stored with LF in the repo and
+# checked out with LF on every platform, which matches the Biome formatter.
+# Git auto-detects binary files and leaves their bytes untouched.
+* text=auto eol=lf
+
+# Be explicit about common binary assets so their bytes are never altered.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.icns binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary
