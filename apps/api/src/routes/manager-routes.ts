@@ -1,6 +1,7 @@
 import {
   CustomerIntakeDetailParamsSchema,
   ManagerJobDetailParamsSchema,
+  ManagerLeadDetailParamsSchema,
 } from "@rsjt/shared";
 import type { FastifyInstance } from "fastify";
 import type { CustomerIntakeStateMachineServiceApi } from "../services/customer-intake-state-machine-service.js";
@@ -46,6 +47,20 @@ export async function registerManagerRoutes(
 
     if (!detail) {
       throw app.httpErrors.notFound("Job not found");
+    }
+
+    return detail;
+  });
+
+  app.get("/manager/conversations/:conversationId/lead", async (request) => {
+    await app.requireRole(request, ["manager"]);
+    const { conversationId } = ManagerLeadDetailParamsSchema.parse(
+      request.params,
+    );
+    const detail = await requireService().getLeadDetail(conversationId);
+
+    if (!detail) {
+      throw app.httpErrors.notFound("Lead not found");
     }
 
     return detail;

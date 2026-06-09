@@ -15,6 +15,7 @@ import {
 import {
   toManagerDashboardResponse,
   toManagerJobDetailResponse,
+  toManagerLeadDetailResponse,
 } from "@/dashboard/dashboard-validation";
 import {
   toJobUpdateFeedResponse,
@@ -47,6 +48,7 @@ import type {
   LoginResponse,
   ManagerDashboardResponse,
   ManagerJobDetailResponse,
+  ManagerLeadDetailResponse,
   OverrideSplitCategoryRequest,
   RejectSchedulingProposalRequest,
   ReminderGenerationResponse,
@@ -116,6 +118,10 @@ export type ApiClient = {
     token: string,
     jobId: string,
   ) => Promise<ManagerJobDetailResponse>;
+  getManagerLeadDetail: (
+    token: string,
+    conversationId: string,
+  ) => Promise<ManagerLeadDetailResponse>;
   getContactCardPreview: (
     token: string,
     conversationId: string,
@@ -295,6 +301,16 @@ export function createApiClient(
         method: "GET",
         token,
         parse: parseManagerJobDetailResponse,
+      }),
+    getManagerLeadDetail: async (token, conversationId) =>
+      requestJson({
+        apiBaseUrl,
+        path: `/manager/conversations/${encodeURIComponent(
+          conversationId,
+        )}/lead`,
+        method: "GET",
+        token,
+        parse: parseManagerLeadDetailResponse,
       }),
     getContactCardPreview: async (token, conversationId) =>
       requestJson({
@@ -656,6 +672,15 @@ function parseManagerJobDetailResponse(payload: unknown) {
   const result = toManagerJobDetailResponse(payload);
   if (!result) {
     throw new ApiError(0, "Unexpected manager job detail response", payload);
+  }
+
+  return result;
+}
+
+function parseManagerLeadDetailResponse(payload: unknown) {
+  const result = toManagerLeadDetailResponse(payload);
+  if (!result) {
+    throw new ApiError(0, "Unexpected manager lead detail response", payload);
   }
 
   return result;

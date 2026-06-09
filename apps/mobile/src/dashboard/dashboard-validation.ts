@@ -1,11 +1,15 @@
 import { isRecord } from "@/auth/session-validation";
 import type {
+  CustomerIntakeState,
   JobState,
+  LeadDetail,
+  LeadSummary,
   ManagerDashboardGroups,
   ManagerDashboardJob,
   ManagerDashboardResponse,
   ManagerDashboardSummary,
   ManagerJobDetailResponse,
+  ManagerLeadDetailResponse,
   MatchConfidenceBand,
   PendingApprovalSummary,
   ProfitBasis,
@@ -73,6 +77,15 @@ const APPROVAL_RISKS = [
 
 const USER_ROLES = ["manager", "tech"] as const satisfies readonly UserRole[];
 
+const INTAKE_STATES = [
+  "unknown",
+  "identifying",
+  "collecting",
+  "matched",
+  "review_ready",
+  "blocked",
+] as const satisfies readonly CustomerIntakeState[];
+
 export function toManagerDashboardResponse(
   value: unknown,
 ): ManagerDashboardResponse | null {
@@ -82,17 +95,34 @@ export function toManagerDashboardResponse(
 
   const summary = toSummary(value.summary);
   const groups = toGroups(value.groups);
+  const leads = toLeadArray(value.leads);
   const takeoverConversations = toTakeoverArray(value.takeoverConversations);
 
-  if (!summary || !groups || !takeoverConversations) {
+  if (!summary || !groups || !leads || !takeoverConversations) {
     return null;
   }
 
   return {
     summary,
     groups,
+    leads,
     takeoverConversations,
   };
+}
+
+export function toManagerLeadDetailResponse(
+  value: unknown,
+): ManagerLeadDetailResponse | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const lead = toLeadDetail(value.lead);
+  if (!lead) {
+    return null;
+  }
+
+  return { lead };
 }
 
 export function toManagerJobDetailResponse(
@@ -131,6 +161,11 @@ function toSummary(value: unknown): ManagerDashboardSummary | null {
   }
 
   const fields = [
+    "leadsCount",
+    "needsTechAnswerCount",
+    "workingOnCount",
+    "jobsCount",
+    "repairCount",
     "openCount",
     "scheduledCount",
     "completedCount",
@@ -325,6 +360,120 @@ function toTakeover(value: unknown): TakeoverConversationSummary | null {
   };
 }
 
+function toLeadArray(value: unknown): LeadSummary[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const items = value.map(toLead);
+  return items.every((item) => item !== null) ? items : null;
+}
+
+function toLead(value: unknown): LeadSummary | null {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "string" ||
+    typeof value.label !== "string" ||
+    value.label.length === 0 ||
+    typeof value.takeoverActive !== "boolean" ||
+    !isIntakeState(value.intakeState)
+  ) {
+    return null;
+  }
+
+  const updatedAt = toDate(value.updatedAt);
+  if (!updatedAt) {
+    return null;
+  }
+
+  const externalPhone = toNullableNonEmptyString(value.externalPhone);
+  if (externalPhone === undefined) {
+    return null;
+  }
+
+  const lastInboundPreview = toNullableNonEmptyString(value.lastInboundPreview);
+  if (lastInboundPreview === undefined) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    label: value.label,
+    externalPhone,
+    intakeState: value.intakeState,
+    takeoverActive: value.takeoverActive,
+    lastInboundPreview,
+    updatedAt,
+  };
+}
+
+function toLeadDetail(value: unknown): LeadDetail | null {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "string" ||
+    typeof value.label !== "string" ||
+    value.label.length === 0 ||
+    typeof value.takeoverActive !== "boolean" ||
+    !isIntakeState(value.intakeState)
+  ) {
+    return null;
+  }
+
+  const updatedAt = toDate(value.updatedAt);
+  if (!updatedAt) {
+    return null;
+  }
+
+  const externalPhone = toNullableNonEmptyString(value.externalPhone);
+  const customerName = toNullableNonEmptyString(value.customerName);
+  const customerEmail = toNullableNonEmptyString(value.customerEmail);
+  const serviceAddress = toNullableNonEmptyString(value.serviceAddress);
+  const problemDescription = toNullableNonEmptyString(value.problemDescription);
+  const preferredTiming = toNullableNonEmptyString(value.preferredTiming);
+  if (
+    externalPhone === undefined ||
+    customerName === undefined ||
+    customerEmail === undefined ||
+    serviceAddress === undefined ||
+    problemDescription === undefined ||
+    preferredTiming === undefined
+  ) {
+    return null;
+  }
+
+  const lastInboundAt = toNullableDate(value.lastInboundAt);
+  if (lastInboundAt === undefined) {
+    return null;
+  }
+
+  let matchedReference: RepairShoprReference | null;
+  if (value.matchedReference === null) {
+    matchedReference = null;
+  } else {
+    const reference = toRepairShoprReference(value.matchedReference);
+    if (!reference) {
+      return null;
+    }
+    matchedReference = reference;
+  }
+
+  return {
+    id: value.id,
+    label: value.label,
+    externalPhone,
+    intakeState: value.intakeState,
+    takeoverActive: value.takeoverActive,
+    customerName,
+    customerEmail,
+    serviceAddress,
+    problemDescription,
+    preferredTiming,
+    matchedReference,
+    lastInboundAt,
+    updatedAt,
+  };
+}
+
 function toPendingApprovalArray(
   value: unknown,
 ): PendingApprovalSummary[] | null {
@@ -408,6 +557,23 @@ function toRepairShoprReference(value: unknown): RepairShoprReference | null {
     displayLabel: value.displayLabel,
     ...(value.url ? { url: value.url } : {}),
   };
+}
+
+function toNullableNonEmptyString(value: unknown): string | null | undefined {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === "string" && value.length > 0) {
+    return value;
+  }
+  return undefined;
+}
+
+function toNullableDate(value: unknown): Date | null | undefined {
+  if (value === null) {
+    return null;
+  }
+  return toDate(value) ?? undefined;
 }
 
 function toOptionalNonEmptyString(value: unknown): string | null | undefined {
@@ -502,4 +668,8 @@ function isApprovalRisk(
 
 function isUserRole(value: unknown): value is UserRole {
   return USER_ROLES.some((role) => role === value);
+}
+
+function isIntakeState(value: unknown): value is CustomerIntakeState {
+  return INTAKE_STATES.some((state) => state === value);
 }

@@ -139,6 +139,11 @@ function responseFor(pathname: string, method: string) {
   if (method === "GET" && pathname === "/manager/dashboard") {
     return {
       summary: {
+        leadsCount: 0,
+        needsTechAnswerCount: 0,
+        workingOnCount: 0,
+        jobsCount: 0,
+        repairCount: 0,
         openCount: 0,
         scheduledCount: 0,
         completedCount: 0,
@@ -161,6 +166,7 @@ function responseFor(pathname: string, method: string) {
           },
         ],
       },
+      leads: [],
       takeoverConversations: [],
     };
   }

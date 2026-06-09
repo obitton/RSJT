@@ -2,6 +2,7 @@ import type {
   CustomerIntakeSnapshot,
   ManagerDashboardResponse,
   ManagerJobDetailResponse,
+  ManagerLeadDetailResponse,
   SessionUser,
 } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
@@ -130,6 +131,68 @@ describe("manager routes", () => {
     const response = await app.inject({
       method: "GET",
       url: "/manager/jobs/not-a-uuid",
+      headers: authHeader("manager"),
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: "Invalid request" });
+
+    await app.close();
+  });
+
+  it("returns the lead detail for a manager session", async () => {
+    const conversationId = "00000000-0000-4000-8000-000000060101";
+    const service = new TestManagerDashboardService();
+    const app = await buildApp(testConfig(), {
+      authService: new TestAuthService(),
+      managerDashboardService: service,
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/manager/conversations/${conversationId}/lead`,
+      headers: authHeader("manager"),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      lead: { id: conversationId, intakeState: "collecting" },
+    });
+    expect(service.leadDetailCalls).toEqual([conversationId]);
+
+    await app.close();
+  });
+
+  it("returns 404 when the lead is missing", async () => {
+    const conversationId = "00000000-0000-4000-8000-000000060101";
+    const service = new TestManagerDashboardService();
+    service.missingLeadIds.add(conversationId);
+    const app = await buildApp(testConfig(), {
+      authService: new TestAuthService(),
+      managerDashboardService: service,
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/manager/conversations/${conversationId}/lead`,
+      headers: authHeader("manager"),
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ error: "Lead not found" });
+
+    await app.close();
+  });
+
+  it("validates the lead conversation id", async () => {
+    const app = await buildApp(testConfig(), {
+      authService: new TestAuthService(),
+      managerDashboardService: new TestManagerDashboardService(),
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/manager/conversations/not-a-uuid/lead",
       headers: authHeader("manager"),
     });
 
@@ -274,6 +337,8 @@ class TestManagerDashboardService implements ManagerDashboardServiceApi {
   dashboardCalls = 0;
   jobDetailCalls: string[] = [];
   missingJobIds = new Set<string>();
+  leadDetailCalls: string[] = [];
+  missingLeadIds = new Set<string>();
 
   async getDashboard() {
     this.dashboardCalls += 1;
@@ -287,6 +352,14 @@ class TestManagerDashboardService implements ManagerDashboardServiceApi {
     }
     return jobDetailResponse();
   }
+
+  async getLeadDetail(conversationId: string) {
+    this.leadDetailCalls.push(conversationId);
+    if (this.missingLeadIds.has(conversationId)) {
+      return null;
+    }
+    return leadDetailResponse(conversationId);
+  }
 }
 
 function dashboardResponse(): ManagerDashboardResponse {
@@ -294,6 +367,11 @@ function dashboardResponse(): ManagerDashboardResponse {
 
   return {
     summary: {
+      leadsCount: 1,
+      needsTechAnswerCount: 0,
+      workingOnCount: 1,
+      jobsCount: 0,
+      repairCount: 0,
       openCount: 1,
       scheduledCount: 0,
       completedCount: 0,
@@ -326,6 +404,7 @@ function dashboardResponse(): ManagerDashboardResponse {
       ],
       payoutReadyJobs: [],
     },
+    leads: [],
     takeoverConversations: [
       {
         id: "00000000-0000-4000-8000-000000020101",
@@ -368,6 +447,28 @@ function jobDetailResponse(): ManagerJobDetailResponse {
         repairShoprId: "local-ticket-101",
         displayLabel: "Local laptop repair",
       },
+    },
+  };
+}
+
+function leadDetailResponse(conversationId: string): ManagerLeadDetailResponse {
+  const updatedAt = new Date("2026-05-26T00:00:00.000Z");
+
+  return {
+    lead: {
+      id: conversationId,
+      label: "+15555550100",
+      externalPhone: "+15555550100",
+      intakeState: "collecting",
+      takeoverActive: false,
+      customerName: null,
+      customerEmail: null,
+      serviceAddress: null,
+      problemDescription: "My laptop will not boot",
+      preferredTiming: null,
+      matchedReference: null,
+      lastInboundAt: updatedAt,
+      updatedAt,
     },
   };
 }
