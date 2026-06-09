@@ -2,6 +2,7 @@ import { apiClient } from "@/api/client";
 import { useAuth } from "@/auth/auth-context";
 import { ActionButton } from "@/components/action-button";
 import { Screen } from "@/components/screen";
+import { formatContactCardState } from "@/contact-cards/contact-card-format";
 import { isTakeoverStale } from "@/conversations/conversation-format";
 import {
   DASHBOARD_GROUP_ORDER,
@@ -14,6 +15,7 @@ import {
   formatPendingApprovalLabel,
 } from "@/dashboard/dashboard-format";
 import type {
+  LeadSummary,
   ManagerDashboardJob,
   ManagerDashboardResponse,
   TakeoverConversationSummary,
@@ -110,7 +112,6 @@ function DashboardBody({
 
   return (
     <>
-      <ConversationShortcut conversations={data.takeoverConversations} />
       <SummaryStrip data={data} />
       <SegmentedGroup
         selected={selectedGroup}
@@ -136,55 +137,104 @@ function DashboardBody({
           Unresolved items stay visible until matched or closed.
         </Text>
       </Panel>
+      <LeadsPanel leads={data.leads} />
       <TakeoverPanel conversations={data.takeoverConversations} />
     </>
   );
 }
 
-function ConversationShortcut({
-  conversations,
-}: {
-  conversations: TakeoverConversationSummary[];
-}) {
-  const primaryConversation = conversations[0] ?? null;
-
+function LeadsPanel({ leads }: { leads: LeadSummary[] }) {
   return (
     <Panel>
       <Text selectable style={styles.panelTitle}>
-        Customer Chat
+        Leads
       </Text>
-      {primaryConversation ? (
-        <>
-          <Text selectable style={styles.jobTitle}>
-            {primaryConversation.externalPhone ?? "Customer"}
-          </Text>
-          <Link
-            href={`/tech/conversations/${primaryConversation.id}`}
-            style={styles.primaryLink}
-          >
-            Open chat
-          </Link>
-        </>
+      {leads.length === 0 ? (
+        <Text selectable style={styles.body}>
+          No leads yet.
+        </Text>
       ) : (
-        <Link href="/tech/conversations" style={styles.primaryLink}>
-          Open conversations
-        </Link>
+        <View style={styles.jobList}>
+          {leads.map((lead) => (
+            <Link
+              key={lead.id}
+              href={`/leads/${lead.id}`}
+              style={styles.jobRowLink}
+            >
+              <View style={styles.jobRow}>
+                <View style={styles.jobText}>
+                  <Text selectable style={styles.jobTitle}>
+                    {lead.label}
+                  </Text>
+                  <Text selectable style={styles.jobMeta}>
+                    {formatContactCardState(lead.intakeState)}
+                    {lead.takeoverActive ? " · Working on" : ""}
+                  </Text>
+                  {lead.lastInboundPreview ? (
+                    <Text selectable style={styles.jobMeta} numberOfLines={1}>
+                      {lead.lastInboundPreview}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            </Link>
+          ))}
+        </View>
       )}
     </Panel>
   );
 }
 
 function SummaryStrip({ data }: { data: ManagerDashboardResponse }) {
+  const summary = data.summary;
   return (
     <View style={styles.summaryStrip}>
-      <SummaryStat label="Open" value={data.summary.openCount} />
-      <SummaryStat label="Scheduled" value={data.summary.scheduledCount} />
-      <SummaryStat label="Payout" value={data.summary.payoutReadyCount} />
+      <SummaryCard
+        label="Leads"
+        value={summary.leadsCount}
+        details={[
+          {
+            label: "Needs tech answer",
+            value: `${summary.needsTechAnswerCount} / ${summary.leadsCount}`,
+          },
+          {
+            label: "Working on",
+            value: `${summary.workingOnCount} / ${summary.leadsCount}`,
+          },
+        ]}
+      />
+      <SummaryCard
+        label="Jobs"
+        value={summary.jobsCount}
+        details={[
+          {
+            label: "Scheduled",
+            value: `${summary.scheduledCount} / ${summary.jobsCount}`,
+          },
+          {
+            label: "Repair",
+            value: `${summary.repairCount} / ${summary.jobsCount}`,
+          },
+        ]}
+      />
+      <SummaryCard
+        label="Payout"
+        value={summary.payoutReadyCount}
+        details={[]}
+      />
     </View>
   );
 }
 
-function SummaryStat({ label, value }: { label: string; value: number }) {
+function SummaryCard({
+  label,
+  value,
+  details,
+}: {
+  label: string;
+  value: number;
+  details: { label: string; value: string }[];
+}) {
   return (
     <View style={styles.summaryStat}>
       <Text selectable style={styles.summaryLabel}>
@@ -193,6 +243,16 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
       <Text selectable style={styles.summaryValue}>
         {value}
       </Text>
+      {details.map((detail) => (
+        <View key={detail.label} style={styles.summaryDetailRow}>
+          <Text selectable style={styles.summaryDetailLabel}>
+            {detail.label}
+          </Text>
+          <Text selectable style={styles.summaryDetailValue}>
+            {detail.value}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -415,6 +475,20 @@ const styles = StyleSheet.create({
   summaryValue: {
     color: "#111827",
     fontSize: 22,
+    fontWeight: "700",
+    fontVariant: ["tabular-nums"],
+  },
+  summaryDetailRow: {
+    gap: 2,
+  },
+  summaryDetailLabel: {
+    color: "#6B7280",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  summaryDetailValue: {
+    color: "#111827",
+    fontSize: 13,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },

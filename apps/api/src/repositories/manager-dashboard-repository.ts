@@ -1,12 +1,24 @@
 import type { AppDb } from "@rsjt/db";
-import { approvals, conversations, jobs, matchCandidates } from "@rsjt/db";
 import {
+  approvals,
+  conversations,
+  jobs,
+  matchCandidates,
+  messages,
+} from "@rsjt/db";
+import {
+  type LeadDetail,
+  LeadDetailSchema,
+  type LeadSummary,
+  LeadSummarySchema,
   type ManagerDashboardJob,
   ManagerDashboardJobSchema,
   type ManagerDashboardResponse,
   ManagerDashboardResponseSchema,
   type ManagerJobDetailResponse,
   ManagerJobDetailResponseSchema,
+  type ManagerLeadDetailResponse,
+  ManagerLeadDetailResponseSchema,
   MatchConfidenceBandSchema,
   PendingApprovalSummarySchema,
   RepairShoprReferenceSchema,
@@ -14,13 +26,16 @@ import {
   type TakeoverConversationSummary,
   TakeoverConversationSummarySchema,
 } from "@rsjt/shared";
-import { and, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNotNull, ne } from "drizzle-orm";
 
 const OPEN_STATES = ["intake", "accepted"] as const;
 const SCHEDULED_STATES = ["scheduled"] as const;
 const COMPLETED_STATES = ["completed"] as const;
 const UNMATCHED_STATES = ["unmatched"] as const;
 const PAYOUT_READY_STATES = ["payout_ready"] as const;
+// Dedicated in-repair job state is introduced in REV01 slice 7; until then this
+// list is empty so the repair count reads 0 instead of a faked number.
+const REPAIR_STATES = [] as const;
 
 type JobRow = typeof jobs.$inferSelect;
 
@@ -34,18 +49,29 @@ export class ManagerDashboardRepository {
       completedJobs,
       unmatchedJobs,
       payoutReadyJobs,
+      repairJobs,
       takeoverConversations,
+      leads,
     ] = await Promise.all([
       this.listJobsForStates([...OPEN_STATES]),
       this.listJobsForStates([...SCHEDULED_STATES]),
       this.listJobsForStates([...COMPLETED_STATES]),
       this.listJobsForStates([...UNMATCHED_STATES]),
       this.listJobsForStates([...PAYOUT_READY_STATES]),
+      this.listJobsForStates([...REPAIR_STATES]),
       this.listTakeoverConversations(),
+      this.listLeads(),
     ]);
+
+    const workingOnCount = leads.filter((lead) => lead.takeoverActive).length;
 
     return ManagerDashboardResponseSchema.parse({
       summary: {
+        leadsCount: leads.length,
+        needsTechAnswerCount: leads.length - workingOnCount,
+        workingOnCount,
+        jobsCount: scheduledJobs.length + repairJobs.length,
+        repairCount: repairJobs.length,
         openCount: openJobs.length,
         scheduledCount: scheduledJobs.length,
         completedCount: completedJobs.length,
@@ -60,8 +86,25 @@ export class ManagerDashboardRepository {
         unmatchedJobs,
         payoutReadyJobs,
       },
+      leads,
       takeoverConversations,
     });
+  }
+
+  async getLeadDetail(
+    conversationId: string,
+  ): Promise<ManagerLeadDetailResponse | null> {
+    const [row] = await this.db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+
+    if (!row) {
+      return null;
+    }
+
+    return ManagerLeadDetailResponseSchema.parse({ lead: toLeadDetail(row) });
   }
 
   async getJobDetail(jobId: string): Promise<ManagerJobDetailResponse | null> {
@@ -201,6 +244,66 @@ export class ManagerDashboardRepository {
     });
   }
 
+  private async listLeads(): Promise<LeadSummary[]> {
+    // A lead is any conversation that is not blocked. Spam is folded into the
+    // blocked intake state, so excluding "blocked" excludes spam too.
+    const rows = await this.db
+      .select()
+      .from(conversations)
+      .where(ne(conversations.intakeState, "blocked"))
+      .orderBy(desc(conversations.updatedAt));
+
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const previewMap = await this.lastInboundPreviews(
+      rows.map((row) => row.id),
+    );
+
+    return rows.map((row) =>
+      LeadSummarySchema.parse({
+        id: row.id,
+        label: leadLabel(row),
+        externalPhone: row.externalPhone,
+        intakeState: row.intakeState,
+        takeoverActive: row.takeoverActive,
+        lastInboundPreview: previewMap.get(row.id) ?? null,
+        updatedAt: row.updatedAt,
+      }),
+    );
+  }
+
+  private async lastInboundPreviews(conversationIds: string[]) {
+    const map = new Map<string, string>();
+    if (conversationIds.length === 0) {
+      return map;
+    }
+
+    const inboundRows = await this.db
+      .select({
+        conversationId: messages.conversationId,
+        body: messages.body,
+        createdAt: messages.createdAt,
+      })
+      .from(messages)
+      .where(
+        and(
+          inArray(messages.conversationId, conversationIds),
+          eq(messages.direction, "inbound"),
+          isNotNull(messages.conversationId),
+        ),
+      )
+      .orderBy(desc(messages.createdAt));
+
+    for (const row of inboundRows) {
+      if (row.conversationId && !map.has(row.conversationId)) {
+        map.set(row.conversationId, row.body.slice(0, 120));
+      }
+    }
+    return map;
+  }
+
   private async listTakeoverConversations(): Promise<
     TakeoverConversationSummary[]
   > {
@@ -226,6 +329,48 @@ export class ManagerDashboardRepository {
       }),
     );
   }
+}
+
+type ConversationRow = typeof conversations.$inferSelect;
+
+function leadLabel(row: ConversationRow): string {
+  // Use the matched customer name when known, otherwise fall back to the phone
+  // number, so an unmatched lead is still identifiable.
+  return (
+    row.customerName ??
+    row.matchedRepairShoprDisplayLabel ??
+    row.externalPhone ??
+    "Unknown sender"
+  );
+}
+
+function toLeadDetail(row: ConversationRow): LeadDetail {
+  const matchedReference =
+    row.matchedRepairShoprEntityType && row.matchedRepairShoprId
+      ? RepairShoprReferenceSchema.parse({
+          entityType: row.matchedRepairShoprEntityType,
+          repairShoprId: row.matchedRepairShoprId,
+          displayLabel:
+            row.matchedRepairShoprDisplayLabel ??
+            `${row.matchedRepairShoprEntityType} ${row.matchedRepairShoprId}`,
+        })
+      : null;
+
+  return LeadDetailSchema.parse({
+    id: row.id,
+    label: leadLabel(row),
+    externalPhone: row.externalPhone,
+    intakeState: row.intakeState,
+    takeoverActive: row.takeoverActive,
+    customerName: row.customerName,
+    customerEmail: row.customerEmail,
+    serviceAddress: row.serviceAddress,
+    problemDescription: row.problemDescription,
+    preferredTiming: row.preferredTiming,
+    matchedReference,
+    lastInboundAt: row.lastInboundAt,
+    updatedAt: row.updatedAt,
+  });
 }
 
 function toManagerDashboardJob(

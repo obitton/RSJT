@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ApprovalKindSchema, ApprovalRiskSchema } from "./approvals.js";
 import { MatchConfidenceBandSchema } from "./confidence.js";
+import { CustomerIntakeStateSchema } from "./intake.js";
 import { JobStateSchema } from "./jobs.js";
 import {
   MoneyCentsSchema,
@@ -11,6 +12,14 @@ import { RepairShoprReferenceSchema } from "./repairshopr.js";
 import { UserRoleSchema } from "./users.js";
 
 export const ManagerDashboardSummarySchema = z.object({
+  // LEADS field (conversations that are not blocked/spam).
+  leadsCount: z.number().int().min(0),
+  needsTechAnswerCount: z.number().int().min(0),
+  workingOnCount: z.number().int().min(0),
+  // JOBS field (leads confirmed and scheduled).
+  jobsCount: z.number().int().min(0),
+  repairCount: z.number().int().min(0),
+  // Existing job-state counts, still used by the group browser below the strip.
   openCount: z.number().int().min(0),
   scheduledCount: z.number().int().min(0),
   completedCount: z.number().int().min(0),
@@ -42,6 +51,42 @@ export const TakeoverConversationSummarySchema = z.object({
   updatedAt: z.date(),
 });
 
+// A Lead is a conversation that has not been blocked as spam. It may or may not
+// have been turned into a Job yet.
+export const LeadSummarySchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1),
+  externalPhone: z.string().min(1).nullable(),
+  intakeState: CustomerIntakeStateSchema,
+  takeoverActive: z.boolean(),
+  lastInboundPreview: z.string().min(1).nullable(),
+  updatedAt: z.date(),
+});
+
+export const LeadDetailSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1),
+  externalPhone: z.string().min(1).nullable(),
+  intakeState: CustomerIntakeStateSchema,
+  takeoverActive: z.boolean(),
+  customerName: z.string().min(1).nullable(),
+  customerEmail: z.string().min(1).nullable(),
+  serviceAddress: z.string().min(1).nullable(),
+  problemDescription: z.string().min(1).nullable(),
+  preferredTiming: z.string().min(1).nullable(),
+  matchedReference: RepairShoprReferenceSchema.nullable(),
+  lastInboundAt: z.date().nullable(),
+  updatedAt: z.date(),
+});
+
+export const ManagerLeadDetailParamsSchema = z.object({
+  conversationId: z.string().uuid(),
+});
+
+export const ManagerLeadDetailResponseSchema = z.object({
+  lead: LeadDetailSchema,
+});
+
 export const ManagerDashboardGroupsSchema = z.object({
   openJobs: z.array(ManagerDashboardJobSchema),
   scheduledJobs: z.array(ManagerDashboardJobSchema),
@@ -53,6 +98,7 @@ export const ManagerDashboardGroupsSchema = z.object({
 export const ManagerDashboardResponseSchema = z.object({
   summary: ManagerDashboardSummarySchema,
   groups: ManagerDashboardGroupsSchema,
+  leads: z.array(LeadSummarySchema),
   takeoverConversations: z.array(TakeoverConversationSummarySchema),
 });
 
@@ -85,6 +131,14 @@ export type ManagerDashboardSummary = z.infer<
   typeof ManagerDashboardSummarySchema
 >;
 export type ManagerDashboardJob = z.infer<typeof ManagerDashboardJobSchema>;
+export type LeadSummary = z.infer<typeof LeadSummarySchema>;
+export type LeadDetail = z.infer<typeof LeadDetailSchema>;
+export type ManagerLeadDetailParams = z.infer<
+  typeof ManagerLeadDetailParamsSchema
+>;
+export type ManagerLeadDetailResponse = z.infer<
+  typeof ManagerLeadDetailResponseSchema
+>;
 export type TakeoverConversationSummary = z.infer<
   typeof TakeoverConversationSummarySchema
 >;

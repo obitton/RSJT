@@ -1,16 +1,23 @@
 import type {
   ManagerDashboardResponse,
   ManagerJobDetailResponse,
+  ManagerLeadDetailResponse,
 } from "@rsjt/shared";
 
 export interface ManagerDashboardStore {
   getDashboard(): Promise<ManagerDashboardResponse>;
   getJobDetail(jobId: string): Promise<ManagerJobDetailResponse | null>;
+  getLeadDetail(
+    conversationId: string,
+  ): Promise<ManagerLeadDetailResponse | null>;
 }
 
 export interface ManagerDashboardServiceApi {
   getDashboard(): Promise<ManagerDashboardResponse>;
   getJobDetail(jobId: string): Promise<ManagerJobDetailResponse | null>;
+  getLeadDetail(
+    conversationId: string,
+  ): Promise<ManagerLeadDetailResponse | null>;
 }
 
 export class ManagerDashboardService implements ManagerDashboardServiceApi {
@@ -22,5 +29,9 @@ export class ManagerDashboardService implements ManagerDashboardServiceApi {
 
   async getJobDetail(jobId: string) {
     return this.store.getJobDetail(jobId);
+  }
+
+  async getLeadDetail(conversationId: string) {
+    return this.store.getLeadDetail(conversationId);
   }
 }

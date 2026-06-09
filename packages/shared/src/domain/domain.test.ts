@@ -148,6 +148,11 @@ describe("domain contracts", () => {
 
     const response = ManagerDashboardResponseSchema.parse({
       summary: {
+        leadsCount: 1,
+        needsTechAnswerCount: 0,
+        workingOnCount: 1,
+        jobsCount: 0,
+        repairCount: 0,
         openCount: 1,
         scheduledCount: 0,
         completedCount: 0,
@@ -180,6 +185,7 @@ describe("domain contracts", () => {
         ],
         payoutReadyJobs: [],
       },
+      leads: [],
       takeoverConversations: [
         {
           id: conversationId,
