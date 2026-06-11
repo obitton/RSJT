@@ -423,6 +423,7 @@ function jobDetailResponse(): ManagerJobDetailResponse {
   return {
     job: {
       id: jobId,
+      conversationId: "00000000-0000-4000-8000-000000020101",
       state: "accepted",
       customerLabel: "Local laptop repair",
       updatedAt,

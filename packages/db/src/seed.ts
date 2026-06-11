@@ -118,6 +118,14 @@ await db
     },
   });
 
+// Link the demo job to the conversation it originated from so the job detail
+// page has a chat to open. Runs after the conversation upsert so the foreign
+// key resolves, and also patches databases seeded before the link existed.
+await db
+  .update(jobs)
+  .set({ conversationId: demoConversationId })
+  .where(eq(jobs.id, "00000000-0000-4000-8000-000000010101"));
+
 await db
   .delete(messages)
   .where(eq(messages.conversationId, demoConversationId));

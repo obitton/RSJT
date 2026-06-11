@@ -30,6 +30,9 @@ export const ManagerDashboardSummarySchema = z.object({
 
 export const ManagerDashboardJobSchema = z.object({
   id: z.string().uuid(),
+  // The lead (conversation) this job originated from; absent for jobs that
+  // predate the lead lifecycle.
+  conversationId: z.string().uuid().optional(),
   state: JobStateSchema,
   customerLabel: z.string().min(1).optional(),
   updatedAt: z.date(),

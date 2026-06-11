@@ -163,6 +163,7 @@ function candidateFixture(
   return {
     job: {
       id: "00000000-0000-4000-8000-000000010102",
+      conversationId: null,
       state: input.state ?? "accepted",
       customerLabel: "Reminder job",
       repairShoprEntityType: null,

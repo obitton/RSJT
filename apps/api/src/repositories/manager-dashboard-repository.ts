@@ -393,6 +393,7 @@ function toManagerDashboardJob(
     state: row.state,
     updatedAt: row.updatedAt,
     pendingApprovalCount,
+    ...(row.conversationId ? { conversationId: row.conversationId } : {}),
     ...(row.customerLabel ? { customerLabel: row.customerLabel } : {}),
     ...(repairShoprReference ? { repairShoprReference } : {}),
     ...(row.splitCategory ? { splitCategory: row.splitCategory } : {}),
