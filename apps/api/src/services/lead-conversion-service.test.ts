@@ -8,6 +8,7 @@ import {
   LeadBlockedError,
   LeadConversionService,
   type LeadConversionStore,
+  LeadNotAnsweredError,
   LeadNotScheduledError,
 } from "./lead-conversion-service.js";
 
@@ -28,7 +29,8 @@ describe("LeadConversionService", () => {
         matchedRepairShoprId: "cust-1",
         matchedRepairShoprDisplayLabel: "Jordan Rivera (CRM)",
       }),
-      hasApproved: true,
+      answered: true,
+      scheduled: true,
     });
 
     const job = await new LeadConversionService(store).convertToJob(
@@ -52,7 +54,8 @@ describe("LeadConversionService", () => {
         customerName: null,
         matchedRepairShoprDisplayLabel: "Jordan Rivera (CRM)",
       }),
-      hasApproved: true,
+      answered: true,
+      scheduled: true,
     });
 
     await new LeadConversionService(store).convertToJob(
@@ -64,7 +67,11 @@ describe("LeadConversionService", () => {
   });
 
   it("throws when the conversation does not exist", async () => {
-    const store = new FakeStore({ conversation: null, hasApproved: true });
+    const store = new FakeStore({
+      conversation: null,
+      answered: true,
+      scheduled: true,
+    });
 
     await expect(
       new LeadConversionService(store).convertToJob(techUser, conversationId),
@@ -74,7 +81,8 @@ describe("LeadConversionService", () => {
   it("throws when the lead is blocked", async () => {
     const store = new FakeStore({
       conversation: conversationFixture({ intakeState: "blocked" }),
-      hasApproved: true,
+      answered: true,
+      scheduled: true,
     });
 
     await expect(
@@ -85,7 +93,8 @@ describe("LeadConversionService", () => {
   it("throws when the lead already has a job", async () => {
     const store = new FakeStore({
       conversation: conversationFixture({}),
-      hasApproved: true,
+      answered: true,
+      scheduled: true,
       existingJob: { id: "job-1", state: "scheduled" },
     });
 
@@ -95,10 +104,24 @@ describe("LeadConversionService", () => {
     expect(store.createInput).toBeNull();
   });
 
-  it("throws when the lead is not scheduled", async () => {
+  it("throws when no tech has answered the lead", async () => {
     const store = new FakeStore({
       conversation: conversationFixture({}),
-      hasApproved: false,
+      answered: false,
+      scheduled: true,
+    });
+
+    await expect(
+      new LeadConversionService(store).convertToJob(techUser, conversationId),
+    ).rejects.toBeInstanceOf(LeadNotAnsweredError);
+    expect(store.createInput).toBeNull();
+  });
+
+  it("throws when the lead has no scheduled appointment", async () => {
+    const store = new FakeStore({
+      conversation: conversationFixture({}),
+      answered: true,
+      scheduled: false,
     });
 
     await expect(
@@ -125,16 +148,19 @@ function conversationFixture(
 class FakeStore implements LeadConversionStore {
   createInput: CreateJobFromConversationInput | null = null;
   private readonly conversation: ConversionConversation | null;
-  private readonly hasApproved: boolean;
+  private readonly answered: boolean;
+  private readonly scheduled: boolean;
   private readonly existingJob: JobSummary | null;
 
   constructor(input: {
     conversation: ConversionConversation | null;
-    hasApproved: boolean;
+    answered: boolean;
+    scheduled: boolean;
     existingJob?: JobSummary | null;
   }) {
     this.conversation = input.conversation;
-    this.hasApproved = input.hasApproved;
+    this.answered = input.answered;
+    this.scheduled = input.scheduled;
     this.existingJob = input.existingJob ?? null;
   }
 
@@ -142,8 +168,12 @@ class FakeStore implements LeadConversionStore {
     return this.conversation;
   }
 
-  async hasApprovedSchedulingProposal() {
-    return this.hasApproved;
+  async hasHumanReply() {
+    return this.answered;
+  }
+
+  async hasScheduledAppointment() {
+    return this.scheduled;
   }
 
   async getJobByConversationId() {

@@ -184,6 +184,17 @@ const convertibleConversationId = "00000000-0000-4000-8000-000000020201";
 const convertibleInboundMessageId = "00000000-0000-4000-8000-000000020202";
 const convertibleProposalId = "00000000-0000-4000-8000-000000020203";
 
+// Reset this demo lead's dependent rows so every seed run leaves it freshly
+// eligible to convert (a tech reply plus a timed, approved appointment) and
+// removes any job created by a previous demo conversion.
+await db.delete(jobs).where(eq(jobs.conversationId, convertibleConversationId));
+await db
+  .delete(schedulingProposals)
+  .where(eq(schedulingProposals.conversationId, convertibleConversationId));
+await db
+  .delete(messages)
+  .where(eq(messages.conversationId, convertibleConversationId));
+
 await db
   .insert(conversations)
   .values({
@@ -202,15 +213,28 @@ await db
 
 await db
   .insert(messages)
-  .values({
-    id: convertibleInboundMessageId,
-    conversationId: convertibleConversationId,
-    direction: "inbound",
-    authorRole: null,
-    body: "Hi, my desktop keeps restarting at random. When can a technician come take a look?",
-    twilioMessageSid: "SMlocaldemo010",
-    createdAt: new Date("2026-05-27T15:00:00.000Z"),
-  })
+  .values([
+    {
+      id: convertibleInboundMessageId,
+      conversationId: convertibleConversationId,
+      direction: "inbound",
+      authorRole: null,
+      body: "Hi, my desktop keeps restarting at random. When can a technician come take a look?",
+      twilioMessageSid: "SMlocaldemo010",
+      createdAt: new Date("2026-05-27T15:00:00.000Z"),
+    },
+    {
+      // A tech reply, so the lead counts as answered ("working on") and is
+      // eligible for conversion. Outbound is gated locally, hence "blocked".
+      id: "00000000-0000-4000-8000-000000020204",
+      conversationId: convertibleConversationId,
+      direction: "outbound",
+      authorRole: "tech",
+      body: "Happy to help. Would Tuesday at 9 AM work for an onsite visit?",
+      externalStatus: "blocked",
+      createdAt: new Date("2026-05-27T15:02:00.000Z"),
+    },
+  ])
   .onConflictDoNothing();
 
 await db
@@ -221,6 +245,10 @@ await db
     jobId: null,
     state: "approved",
     preferredWindowText: "Weekday mornings",
+    // A concrete appointment time, so this is a booked appointment rather than
+    // an open-ended proposal.
+    startAt: new Date("2026-06-02T13:00:00.000Z"),
+    endAt: new Date("2026-06-02T14:00:00.000Z"),
     customerMessageBody: "Would Tuesday at 9 AM work for a visit?",
     repairShoprAppointmentPayload: {
       status: "staged",

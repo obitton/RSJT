@@ -1,5 +1,5 @@
 import type { AppDb } from "@rsjt/db";
-import { conversations, jobs, schedulingProposals } from "@rsjt/db";
+import { conversations, jobs, messages, schedulingProposals } from "@rsjt/db";
 import {
   type JobState,
   type JobSummary,
@@ -7,7 +7,7 @@ import {
   type RepairShoprReference,
   RepairShoprReferenceSchema,
 } from "@rsjt/shared";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import type {
   ConversionConversation,
   CreateJobFromConversationInput,
@@ -40,9 +40,25 @@ export class LeadConversionRepository implements LeadConversionStore {
     return row ?? null;
   }
 
-  async hasApprovedSchedulingProposal(
-    conversationId: string,
-  ): Promise<boolean> {
+  async hasHumanReply(conversationId: string): Promise<boolean> {
+    const [row] = await this.db
+      .select({ id: messages.id })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.conversationId, conversationId),
+          eq(messages.direction, "outbound"),
+          inArray(messages.authorRole, ["tech", "manager"]),
+        ),
+      )
+      .limit(1);
+
+    return Boolean(row);
+  }
+
+  async hasScheduledAppointment(conversationId: string): Promise<boolean> {
+    // An approved proposal with a concrete start time is a booked appointment;
+    // an approved proposal with no time is only a draft sent to the customer.
     const [row] = await this.db
       .select({ id: schedulingProposals.id })
       .from(schedulingProposals)
@@ -50,6 +66,7 @@ export class LeadConversionRepository implements LeadConversionStore {
         and(
           eq(schedulingProposals.conversationId, conversationId),
           eq(schedulingProposals.state, "approved"),
+          isNotNull(schedulingProposals.startAt),
         ),
       )
       .limit(1);

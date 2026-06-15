@@ -9,6 +9,7 @@ import {
   LeadAlreadyConvertedError,
   LeadBlockedError,
   type LeadConversionServiceApi,
+  LeadNotAnsweredError,
   LeadNotScheduledError,
 } from "../services/lead-conversion-service.js";
 import {
@@ -139,9 +140,14 @@ function mapConversionError(app: FastifyInstance, error: unknown) {
   if (error instanceof LeadAlreadyConvertedError) {
     return app.httpErrors.conflict("Lead has already been converted to a job");
   }
+  if (error instanceof LeadNotAnsweredError) {
+    return app.httpErrors.conflict(
+      "A lead must be answered by a tech before it can become a job",
+    );
+  }
   if (error instanceof LeadNotScheduledError) {
     return app.httpErrors.conflict(
-      "Lead must be scheduled before it can become a job",
+      "Lead must have a scheduled appointment before it can become a job",
     );
   }
   return error;

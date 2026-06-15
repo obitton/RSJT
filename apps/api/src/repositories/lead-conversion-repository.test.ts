@@ -5,6 +5,7 @@ import {
   createDb,
   createPool,
   jobs,
+  messages,
   schedulingProposals,
 } from "@rsjt/db";
 import { inArray } from "drizzle-orm";
@@ -35,6 +36,9 @@ describe("LeadConversionRepository", () => {
     }
     if (createdConversationIds.length > 0) {
       await db
+        .delete(messages)
+        .where(inArray(messages.conversationId, createdConversationIds));
+      await db
         .delete(schedulingProposals)
         .where(
           inArray(schedulingProposals.conversationId, createdConversationIds),
@@ -50,7 +54,7 @@ describe("LeadConversionRepository", () => {
     await pool.end();
   });
 
-  it("reads conversation fields and approved-proposal state", async () => {
+  it("reads the conversation fields needed to seed a job", async () => {
     const conversationId = await createConversation({
       customerName: "Jordan Rivera",
       matchedRepairShoprEntityType: "customer",
@@ -65,15 +69,34 @@ describe("LeadConversionRepository", () => {
       customerName: "Jordan Rivera",
       matchedRepairShoprId: "cust-9",
     });
+  });
 
-    expect(await repository.hasApprovedSchedulingProposal(conversationId)).toBe(
+  it("detects a human reply only after a tech or manager answers", async () => {
+    const conversationId = await createConversation({});
+
+    await createMessage(conversationId, { direction: "inbound" });
+    expect(await repository.hasHumanReply(conversationId)).toBe(false);
+
+    await createMessage(conversationId, {
+      direction: "outbound",
+      authorRole: "tech",
+    });
+    expect(await repository.hasHumanReply(conversationId)).toBe(true);
+  });
+
+  it("treats an approved proposal as scheduled only when it has a start time", async () => {
+    const conversationId = await createConversation({});
+
+    await createApprovedProposal(conversationId, null);
+    expect(await repository.hasScheduledAppointment(conversationId)).toBe(
       false,
     );
 
-    await createApprovedProposal(conversationId);
-    expect(await repository.hasApprovedSchedulingProposal(conversationId)).toBe(
-      true,
+    await createApprovedProposal(
+      conversationId,
+      new Date("2026-06-02T13:00:00.000Z"),
     );
+    expect(await repository.hasScheduledAppointment(conversationId)).toBe(true);
   });
 
   it("creates a scheduled job from the conversation and finds it by conversation id", async () => {
@@ -120,12 +143,32 @@ describe("LeadConversionRepository", () => {
     return id;
   }
 
-  async function createApprovedProposal(conversationId: string) {
+  async function createMessage(
+    conversationId: string,
+    values: {
+      direction: "inbound" | "outbound" | "internal";
+      authorRole?: "tech" | "manager";
+    },
+  ) {
+    await db.insert(messages).values({
+      conversationId,
+      direction: values.direction,
+      authorRole: values.authorRole ?? null,
+      body: "message body",
+    });
+  }
+
+  async function createApprovedProposal(
+    conversationId: string,
+    startAt: Date | null,
+  ) {
     await db.insert(schedulingProposals).values({
       conversationId,
       jobId: null,
       state: "approved",
       preferredWindowText: "Weekday mornings",
+      startAt,
+      endAt: startAt,
       customerMessageBody: "Would Tuesday at 9 AM work?",
       repairShoprAppointmentPayload: { status: "staged" },
       sourceEvidence: [{ messageId: randomUUID(), quote: "restarting" }],

@@ -13,6 +13,7 @@ import type { AuthSessionService } from "../services/auth-service.js";
 import {
   LeadAlreadyConvertedError,
   type LeadConversionServiceApi,
+  LeadNotAnsweredError,
   LeadNotScheduledError,
 } from "../services/lead-conversion-service.js";
 import {
@@ -237,6 +238,17 @@ describe("tech conversation routes", () => {
       leadConversionService: conversionService,
     });
 
+    conversionService.nextError = new LeadNotAnsweredError();
+    const notAnswered = await app.inject({
+      method: "POST",
+      url: `/tech/conversations/${conversationId}/convert-to-job`,
+      headers: authHeader("tech"),
+    });
+    expect(notAnswered.statusCode).toBe(409);
+    expect(notAnswered.json()).toEqual({
+      error: "A lead must be answered by a tech before it can become a job",
+    });
+
     conversionService.nextError = new LeadNotScheduledError();
     const notScheduled = await app.inject({
       method: "POST",
@@ -245,7 +257,8 @@ describe("tech conversation routes", () => {
     });
     expect(notScheduled.statusCode).toBe(409);
     expect(notScheduled.json()).toEqual({
-      error: "Lead must be scheduled before it can become a job",
+      error:
+        "Lead must have a scheduled appointment before it can become a job",
     });
 
     conversionService.nextError = new LeadAlreadyConvertedError();
