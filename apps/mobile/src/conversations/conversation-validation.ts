@@ -1,4 +1,5 @@
 import { isRecord } from "@/auth/session-validation";
+import { toJobSummary } from "@/jobs/job-validation";
 import type {
   ConversationDetail,
   ConversationDetailResponse,
@@ -6,6 +7,7 @@ import type {
   ConversationMessage,
   ConversationMessageDirection,
   ConversationSummary,
+  ConvertLeadToJobResponse,
   SendConversationMessageResponse,
   UserRole,
 } from "@rsjt/shared";
@@ -54,6 +56,16 @@ export function toSendConversationMessageResponse(
   }
   const message = toConversationMessage(value.message);
   return message ? { message } : null;
+}
+
+export function toConvertLeadToJobResponse(
+  value: unknown,
+): ConvertLeadToJobResponse | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const job = toJobSummary(value.job);
+  return job ? { job } : null;
 }
 
 function toSummaryArray(value: unknown): ConversationSummary[] | null {

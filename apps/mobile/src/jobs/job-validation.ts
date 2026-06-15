@@ -134,7 +134,7 @@ function toJobSummaryArray(value: unknown): JobSummary[] | null {
   return jobs.every((job) => job !== null) ? jobs : null;
 }
 
-function toJobSummary(value: unknown): JobSummary | null {
+export function toJobSummary(value: unknown): JobSummary | null {
   if (
     !isRecord(value) ||
     typeof value.id !== "string" ||

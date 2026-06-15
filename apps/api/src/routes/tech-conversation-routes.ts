@@ -5,6 +5,13 @@ import {
 } from "@rsjt/shared";
 import type { FastifyInstance } from "fastify";
 import {
+  ConversationNotFoundError as ConversionConversationNotFoundError,
+  LeadAlreadyConvertedError,
+  LeadBlockedError,
+  type LeadConversionServiceApi,
+  LeadNotScheduledError,
+} from "../services/lead-conversion-service.js";
+import {
   ConversationNotFoundError,
   type LiveTakeoverServiceApi,
   OutboundMessagingDisabledError,
@@ -14,6 +21,7 @@ import {
 export async function registerTechConversationRoutes(
   app: FastifyInstance,
   liveTakeoverService?: LiveTakeoverServiceApi,
+  leadConversionService?: LeadConversionServiceApi,
 ) {
   function requireService() {
     if (!liveTakeoverService) {
@@ -22,6 +30,15 @@ export async function registerTechConversationRoutes(
       );
     }
     return liveTakeoverService;
+  }
+
+  function requireConversionService() {
+    if (!leadConversionService) {
+      throw app.httpErrors.serviceUnavailable(
+        "Lead conversion service unavailable",
+      );
+    }
+    return leadConversionService;
   }
 
   app.get("/tech/conversations", async (request) => {
@@ -75,6 +92,28 @@ export async function registerTechConversationRoutes(
       throw mapServiceError(app, error);
     }
   });
+
+  app.post(
+    "/tech/conversations/:conversationId/convert-to-job",
+    async (request) => {
+      // Both techs and managers can convert a scheduled lead into a job; a tech
+      // does not need a manager's approval.
+      const user = await app.requireRole(request, ["tech", "manager"]);
+      const { conversationId } = ConversationIdParamsSchema.parse(
+        request.params,
+      );
+
+      try {
+        const job = await requireConversionService().convertToJob(
+          user,
+          conversationId,
+        );
+        return { job };
+      } catch (error) {
+        throw mapConversionError(app, error);
+      }
+    },
+  );
 }
 
 function mapServiceError(app: FastifyInstance, error: unknown) {
@@ -86,6 +125,24 @@ function mapServiceError(app: FastifyInstance, error: unknown) {
   }
   if (error instanceof OutboundMessagingDisabledError) {
     return app.httpErrors.conflict("Outbound messaging is disabled");
+  }
+  return error;
+}
+
+function mapConversionError(app: FastifyInstance, error: unknown) {
+  if (error instanceof ConversionConversationNotFoundError) {
+    return app.httpErrors.notFound("Conversation not found");
+  }
+  if (error instanceof LeadBlockedError) {
+    return app.httpErrors.conflict("A blocked lead cannot become a job");
+  }
+  if (error instanceof LeadAlreadyConvertedError) {
+    return app.httpErrors.conflict("Lead has already been converted to a job");
+  }
+  if (error instanceof LeadNotScheduledError) {
+    return app.httpErrors.conflict(
+      "Lead must be scheduled before it can become a job",
+    );
   }
   return error;
 }

@@ -10,6 +10,7 @@ import {
 import {
   toConversationDetailResponse,
   toConversationListResponse,
+  toConvertLeadToJobResponse,
   toSendConversationMessageResponse,
 } from "@/conversations/conversation-validation";
 import {
@@ -41,6 +42,7 @@ import type {
   ContactCardVcardResponse,
   ConversationDetailResponse,
   ConversationListResponse,
+  ConvertLeadToJobResponse,
   EditSchedulingProposalRequest,
   JobMoneyResponse,
   JobUpdateFeedResponse,
@@ -145,6 +147,10 @@ export type ApiClient = {
     conversationId: string,
     input: SendConversationMessageRequest,
   ) => Promise<SendConversationMessageResponse>;
+  convertLeadToJob: (
+    token: string,
+    conversationId: string,
+  ) => Promise<ConvertLeadToJobResponse>;
   listSchedulingProposals: (
     token: string,
   ) => Promise<SchedulingProposalListResponse>;
@@ -364,6 +370,14 @@ export function createApiClient(
         token,
         body: input,
         parse: parseSendConversationMessageResponse,
+      }),
+    convertLeadToJob: async (token, conversationId) =>
+      requestJson({
+        apiBaseUrl,
+        path: `/tech/conversations/${encodeURIComponent(conversationId)}/convert-to-job`,
+        method: "POST",
+        token,
+        parse: parseConvertLeadToJobResponse,
       }),
     listSchedulingProposals: async (token) =>
       requestJson({
@@ -728,6 +742,14 @@ function parseSendConversationMessageResponse(payload: unknown) {
       "Unexpected send conversation message response",
       payload,
     );
+  }
+  return result;
+}
+
+function parseConvertLeadToJobResponse(payload: unknown) {
+  const result = toConvertLeadToJobResponse(payload);
+  if (!result) {
+    throw new ApiError(0, "Unexpected convert lead to job response", payload);
   }
   return result;
 }
