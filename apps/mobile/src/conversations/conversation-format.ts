@@ -1,21 +1,30 @@
 import type {
   ConversationMessageDirection,
   OutboundMessageStatus,
+  UserRole,
 } from "@rsjt/shared";
 
 const STALE_TAKEOVER_MINUTES = 60;
 
-export function formatMessageDirection(
+// Internal attribution shown to managers and techs only. The customer never
+// sees this label; their channel only ever carries the message body. A
+// manager- or tech-authored message is named from authorRole, an inbound
+// message is always the customer, and an outbound/internal message with no
+// human author is the AI/system.
+export function formatMessageSender(
   direction: ConversationMessageDirection,
+  authorRole: UserRole | null,
 ) {
-  switch (direction) {
-    case "inbound":
-      return "Customer";
-    case "outbound":
-      return "Tech";
-    case "internal":
-      return "Internal";
+  if (direction === "inbound") {
+    return "Customer";
   }
+  if (authorRole === "manager") {
+    return "Manager";
+  }
+  if (authorRole === "tech") {
+    return "Tech";
+  }
+  return "Automated";
 }
 
 export function formatOutboundStatus(status: OutboundMessageStatus | string) {

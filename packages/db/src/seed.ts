@@ -151,6 +151,15 @@ await db
       createdAt: new Date("2026-05-26T14:01:00.000Z"),
     },
     {
+      // No authorRole: an AI/system note, so the transcript shows "Automated".
+      id: "00000000-0000-4000-8000-000000020105",
+      conversationId: demoConversationId,
+      direction: "internal",
+      authorRole: null,
+      body: "AI summary: liquid spill near keyboard, laptop will not charge. Likely onsite diagnostic. Draft reply prepared for tech review.",
+      createdAt: new Date("2026-05-26T14:01:30.000Z"),
+    },
+    {
       id: "00000000-0000-4000-8000-000000020104",
       conversationId: demoConversationId,
       direction: "outbound",

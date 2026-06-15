@@ -3,7 +3,7 @@ import { useAuth } from "@/auth/auth-context";
 import { ActionButton } from "@/components/action-button";
 import { Screen } from "@/components/screen";
 import {
-  formatMessageDirection,
+  formatMessageSender,
   formatOutboundStatus,
 } from "@/conversations/conversation-format";
 import type { ConversationDetail } from "@rsjt/shared";
@@ -175,7 +175,8 @@ function ConversationBody({
             {detail.messages.map((message) => (
               <View key={message.id} style={styles.messageRow}>
                 <Text selectable style={styles.messageDirection}>
-                  {formatMessageDirection(message.direction)}
+                  {formatMessageSender(message.direction, message.authorRole)}
+                  {message.direction === "internal" ? " · Internal note" : ""}
                 </Text>
                 <Text selectable style={styles.messageBody}>
                   {message.body}
