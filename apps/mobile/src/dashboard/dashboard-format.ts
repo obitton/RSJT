@@ -1,4 +1,5 @@
 import type {
+  JobOrigin,
   JobState,
   ManagerDashboardJob,
   MatchConfidenceBand,
@@ -66,6 +67,15 @@ export function formatJobStateLabel(state: JobState) {
       return "Payout ready";
     case "closed":
       return "Closed";
+  }
+}
+
+export function formatJobOriginLabel(origin: JobOrigin) {
+  switch (origin) {
+    case "lead":
+      return "Lead-based";
+    case "manual":
+      return "Manual";
   }
 }
 

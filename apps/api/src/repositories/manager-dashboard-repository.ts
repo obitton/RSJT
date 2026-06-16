@@ -416,9 +416,11 @@ function toManagerDashboardJob(
   return ManagerDashboardJobSchema.parse({
     id: row.id,
     state: row.state,
+    origin: row.origin,
     updatedAt: row.updatedAt,
     pendingApprovalCount,
     ...(row.conversationId ? { conversationId: row.conversationId } : {}),
+    ...(row.originNote ? { originNote: row.originNote } : {}),
     ...(row.customerLabel ? { customerLabel: row.customerLabel } : {}),
     ...(repairShoprReference ? { repairShoprReference } : {}),
     ...(row.splitCategory ? { splitCategory: row.splitCategory } : {}),

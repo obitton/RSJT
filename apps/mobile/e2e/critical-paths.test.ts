@@ -160,6 +160,7 @@ function responseFor(pathname: string, method: string) {
           {
             id: jobId,
             state: "payout_ready",
+            origin: "lead",
             customerLabel: "Fixture laptop repair",
             updatedAt: "2026-05-26T12:00:00.000Z",
             pendingApprovalCount: 0,

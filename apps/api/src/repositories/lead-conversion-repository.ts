@@ -93,6 +93,7 @@ export class LeadConversionRepository implements LeadConversionStore {
       .insert(jobs)
       .values({
         conversationId: input.conversationId,
+        origin: "lead",
         state: input.state,
         customerLabel: input.customerLabel,
         repairShoprEntityType: input.repairShoprEntityType,
