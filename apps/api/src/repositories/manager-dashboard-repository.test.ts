@@ -69,7 +69,7 @@ describe("ManagerDashboardRepository", () => {
     await pool.end();
   });
 
-  it("groups jobs by state and orders each group by updatedAt desc", async () => {
+  it("groups jobs into the lifecycle sections, newest first", async () => {
     const earlierAccepted = await createJob({
       state: "accepted",
       customerLabel: "Earlier accepted",
@@ -95,40 +95,55 @@ describe("ManagerDashboardRepository", () => {
       customerLabel: "Payout ready",
       updatedAt: new Date("2026-05-22T12:00:00.000Z"),
     });
+    const completedJob = await createJob({
+      state: "completed",
+      customerLabel: "Completed job",
+      updatedAt: new Date("2026-05-22T09:00:00.000Z"),
+    });
     const closedJob = await createJob({
       state: "closed",
       customerLabel: "Closed job",
-      updatedAt: new Date("2026-05-22T12:00:00.000Z"),
+      updatedAt: new Date("2026-05-22T08:00:00.000Z"),
+    });
+    const canceledJob = await createJob({
+      state: "canceled",
+      customerLabel: "Canceled job",
+      updatedAt: new Date("2026-05-22T07:00:00.000Z"),
     });
 
     const dashboard = await repository.getDashboard();
 
-    const openIds = dashboard.groups.openJobs.map((job) => job.id);
-    expect(openIds).toEqual(
-      expect.arrayContaining([earlierAccepted, laterAccepted]),
+    const jobIds = dashboard.groups.jobs.map((job) => job.id);
+    expect(jobIds).toEqual(
+      expect.arrayContaining([
+        earlierAccepted,
+        laterAccepted,
+        scheduled,
+        unmatched,
+      ]),
     );
-    expect(openIds.indexOf(laterAccepted)).toBeLessThan(
-      openIds.indexOf(earlierAccepted),
+    // The merged active section is ordered by updatedAt descending.
+    expect(jobIds.indexOf(laterAccepted)).toBeLessThan(
+      jobIds.indexOf(earlierAccepted),
     );
-    expect(dashboard.groups.scheduledJobs.map((job) => job.id)).toContain(
-      scheduled,
+
+    expect(dashboard.groups.payout.map((job) => job.id)).toContain(payoutReady);
+    expect(dashboard.groups.completed.map((job) => job.id)).toEqual(
+      expect.arrayContaining([completedJob, closedJob]),
     );
-    expect(dashboard.groups.unmatchedJobs.map((job) => job.id)).toContain(
-      unmatched,
+    expect(dashboard.groups.canceled.map((job) => job.id)).toContain(
+      canceledJob,
     );
-    expect(dashboard.groups.payoutReadyJobs.map((job) => job.id)).toContain(
+
+    // The active "jobs" section excludes terminal states.
+    for (const terminalId of [
       payoutReady,
-    );
-    expect(
-      [
-        ...dashboard.groups.openJobs,
-        ...dashboard.groups.scheduledJobs,
-        ...dashboard.groups.unmatchedJobs,
-        ...dashboard.groups.completedJobs,
-        ...dashboard.groups.payoutReadyJobs,
-      ].map((job) => job.id),
-    ).not.toContain(closedJob);
-    expect(dashboard.summary.openCount).toBeGreaterThanOrEqual(2);
+      completedJob,
+      closedJob,
+      canceledJob,
+    ]) {
+      expect(jobIds).not.toContain(terminalId);
+    }
   });
 
   it("counts pending approvals per job and ignores decided approvals", async () => {
@@ -143,7 +158,7 @@ describe("ManagerDashboardRepository", () => {
     await createApproval(userId, jobId, "approved");
 
     const dashboard = await repository.getDashboard();
-    const job = dashboard.groups.openJobs.find(
+    const job = dashboard.groups.jobs.find(
       (candidate) => candidate.id === jobId,
     );
 

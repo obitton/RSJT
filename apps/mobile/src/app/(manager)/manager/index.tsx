@@ -3,22 +3,20 @@ import { useAuth } from "@/auth/auth-context";
 import { ActionButton } from "@/components/action-button";
 import { Screen } from "@/components/screen";
 import { formatContactCardState } from "@/contact-cards/contact-card-format";
-import { isTakeoverStale } from "@/conversations/conversation-format";
 import {
-  DASHBOARD_GROUP_ORDER,
-  type DashboardGroupKey,
+  DASHBOARD_SECTION_ORDER,
+  type DashboardSectionKey,
   formatConfidenceBandLabel,
-  formatGroupEmptyCopy,
-  formatGroupLabel,
   formatJobChargeLabel,
   formatJobStateLabel,
   formatPendingApprovalLabel,
+  formatSectionEmptyCopy,
+  formatSectionLabel,
 } from "@/dashboard/dashboard-format";
 import type {
   LeadSummary,
   ManagerDashboardJob,
   ManagerDashboardResponse,
-  TakeoverConversationSummary,
 } from "@rsjt/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "expo-router";
@@ -34,8 +32,8 @@ import {
 export default function ManagerHomeScreen() {
   const { session, signOut } = useAuth();
   const token = session?.token;
-  const [selectedGroup, setSelectedGroup] =
-    useState<DashboardGroupKey>("openJobs");
+  const [selectedSection, setSelectedSection] =
+    useState<DashboardSectionKey>("leads");
 
   const dashboardQuery = useQuery({
     enabled: Boolean(token),
@@ -81,8 +79,8 @@ export default function ManagerHomeScreen() {
       ) : dashboardQuery.data ? (
         <DashboardBody
           data={dashboardQuery.data}
-          selectedGroup={selectedGroup}
-          onSelectGroup={setSelectedGroup}
+          selectedSection={selectedSection}
+          onSelectSection={setSelectedSection}
         />
       ) : null}
 
@@ -101,87 +99,31 @@ export default function ManagerHomeScreen() {
 
 function DashboardBody({
   data,
-  selectedGroup,
-  onSelectGroup,
+  selectedSection,
+  onSelectSection,
 }: {
   data: ManagerDashboardResponse;
-  selectedGroup: DashboardGroupKey;
-  onSelectGroup: (group: DashboardGroupKey) => void;
+  selectedSection: DashboardSectionKey;
+  onSelectSection: (section: DashboardSectionKey) => void;
 }) {
-  const groupJobs = data.groups[selectedGroup];
-
   return (
     <>
       <SummaryStrip data={data} />
-      <SegmentedGroup
-        selected={selectedGroup}
-        takeoverCount={data.summary.takeoverCount}
-        onSelect={onSelectGroup}
-      />
+      <SectionTabs selected={selectedSection} onSelect={onSelectSection} />
       <Panel>
         <Text selectable style={styles.panelTitle}>
-          {formatGroupLabel(selectedGroup)}
+          {formatSectionLabel(selectedSection)}
         </Text>
-        {groupJobs.length === 0 ? (
-          <Text selectable style={styles.body}>
-            {formatGroupEmptyCopy(selectedGroup)}
-          </Text>
+        {selectedSection === "leads" ? (
+          <LeadList leads={data.leads} />
         ) : (
-          <View style={styles.jobList}>
-            {groupJobs.map((job) => (
-              <JobRow key={job.id} job={job} />
-            ))}
-          </View>
+          <JobSectionList
+            jobs={data.groups[selectedSection]}
+            emptyCopy={formatSectionEmptyCopy(selectedSection)}
+          />
         )}
-        <Text selectable style={styles.caption}>
-          Unresolved items stay visible until matched or closed.
-        </Text>
       </Panel>
-      <LeadsPanel leads={data.leads} />
-      <TakeoverPanel conversations={data.takeoverConversations} />
     </>
-  );
-}
-
-function LeadsPanel({ leads }: { leads: LeadSummary[] }) {
-  return (
-    <Panel>
-      <Text selectable style={styles.panelTitle}>
-        Leads
-      </Text>
-      {leads.length === 0 ? (
-        <Text selectable style={styles.body}>
-          No leads yet.
-        </Text>
-      ) : (
-        <View style={styles.jobList}>
-          {leads.map((lead) => (
-            <Link
-              key={lead.id}
-              href={`/leads/${lead.id}`}
-              style={styles.jobRowLink}
-            >
-              <View style={styles.jobRow}>
-                <View style={styles.jobText}>
-                  <Text selectable style={styles.jobTitle}>
-                    {lead.label}
-                  </Text>
-                  <Text selectable style={styles.jobMeta}>
-                    {formatContactCardState(lead.intakeState)}
-                    {lead.takeoverActive ? " · Working on" : ""}
-                  </Text>
-                  {lead.lastInboundPreview ? (
-                    <Text selectable style={styles.jobMeta} numberOfLines={1}>
-                      {lead.lastInboundPreview}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
-            </Link>
-          ))}
-        </View>
-      )}
-    </Panel>
   );
 }
 
@@ -257,55 +199,41 @@ function SummaryCard({
   );
 }
 
-function SegmentedGroup({
+function SectionTabs({
   selected,
-  takeoverCount,
   onSelect,
 }: {
-  selected: DashboardGroupKey;
-  takeoverCount: number;
-  onSelect: (group: DashboardGroupKey) => void;
+  selected: DashboardSectionKey;
+  onSelect: (section: DashboardSectionKey) => void;
 }) {
   return (
     <View style={styles.segmentedControl}>
-      {DASHBOARD_GROUP_ORDER.map((group) => (
+      {DASHBOARD_SECTION_ORDER.map((section) => (
         <SegmentButton
-          active={selected === group}
-          key={group}
-          label={formatGroupLabel(group)}
-          onPress={() => onSelect(group)}
+          active={selected === section}
+          key={section}
+          label={formatSectionLabel(section)}
+          onPress={() => onSelect(section)}
         />
       ))}
-      <SegmentButton
-        active={false}
-        disabled
-        label={`Takeover ${takeoverCount}`}
-      />
     </View>
   );
 }
 
 function SegmentButton({
   active,
-  disabled,
   label,
   onPress,
 }: {
   active: boolean;
-  disabled?: boolean;
   label: string;
-  onPress?: () => void;
+  onPress: () => void;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
-      disabled={disabled}
       onPress={onPress}
-      style={[
-        styles.segmentButton,
-        active && styles.activeSegmentButton,
-        disabled && styles.disabledSegmentButton,
-      ]}
+      style={[styles.segmentButton, active && styles.activeSegmentButton]}
     >
       <Text
         selectable={false}
@@ -314,6 +242,69 @@ function SegmentButton({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+function LeadList({ leads }: { leads: LeadSummary[] }) {
+  if (leads.length === 0) {
+    return (
+      <Text selectable style={styles.body}>
+        {formatSectionEmptyCopy("leads")}
+      </Text>
+    );
+  }
+
+  return (
+    <View style={styles.jobList}>
+      {leads.map((lead) => (
+        <Link
+          key={lead.id}
+          href={`/leads/${lead.id}`}
+          style={styles.jobRowLink}
+        >
+          <View style={styles.jobRow}>
+            <View style={styles.jobText}>
+              <Text selectable style={styles.jobTitle}>
+                {lead.label}
+              </Text>
+              <Text selectable style={styles.jobMeta}>
+                {formatContactCardState(lead.intakeState)}
+                {lead.takeoverActive ? " · Working on" : ""}
+              </Text>
+              {lead.lastInboundPreview ? (
+                <Text selectable style={styles.jobMeta} numberOfLines={1}>
+                  {lead.lastInboundPreview}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        </Link>
+      ))}
+    </View>
+  );
+}
+
+function JobSectionList({
+  jobs,
+  emptyCopy,
+}: {
+  jobs: ManagerDashboardJob[];
+  emptyCopy: string;
+}) {
+  if (jobs.length === 0) {
+    return (
+      <Text selectable style={styles.body}>
+        {emptyCopy}
+      </Text>
+    );
+  }
+
+  return (
+    <View style={styles.jobList}>
+      {jobs.map((job) => (
+        <JobRow key={job.id} job={job} />
+      ))}
+    </View>
   );
 }
 
@@ -346,62 +337,6 @@ function JobRow({ job }: { job: ManagerDashboardJob }) {
         </View>
       </View>
     </Link>
-  );
-}
-
-function TakeoverPanel({
-  conversations,
-}: {
-  conversations: TakeoverConversationSummary[];
-}) {
-  return (
-    <Panel>
-      <Text selectable style={styles.panelTitle}>
-        Active takeover
-      </Text>
-      {conversations.length === 0 ? (
-        <Text selectable style={styles.body}>
-          No takeover conversations.
-        </Text>
-      ) : (
-        <View style={styles.takeoverList}>
-          {conversations.map((conversation) => {
-            const stale = isTakeoverStale(conversation.takeoverStartedAt);
-            return (
-              <View
-                key={conversation.id}
-                style={[styles.takeoverRow, stale && styles.takeoverRowStale]}
-              >
-                <Text selectable style={styles.takeoverPhone}>
-                  {conversation.externalPhone ?? "Unknown sender"}
-                </Text>
-                <Text selectable style={styles.takeoverMeta}>
-                  {stale ? "Stale takeover · " : ""}Active since{" "}
-                  {(
-                    conversation.takeoverStartedAt ?? conversation.updatedAt
-                  ).toLocaleString()}
-                </Text>
-                <Link
-                  href={`/tech/conversations/${conversation.id}`}
-                  style={styles.contactCardLink}
-                >
-                  Open chat
-                </Link>
-                <Link
-                  href={{
-                    pathname: "/manager/contact-card/[conversationId]",
-                    params: { conversationId: conversation.id },
-                  }}
-                  style={styles.contactCardLink}
-                >
-                  Contact card
-                </Link>
-              </View>
-            );
-          })}
-        </View>
-      )}
-    </Panel>
   );
 }
 
@@ -447,11 +382,6 @@ const styles = StyleSheet.create({
     color: "#4B5563",
     fontSize: 14,
     lineHeight: 20,
-  },
-  caption: {
-    color: "#6B7280",
-    fontSize: 12,
-    fontStyle: "italic",
   },
   summaryStrip: {
     flexDirection: "row",
@@ -512,9 +442,6 @@ const styles = StyleSheet.create({
   },
   activeSegmentButton: {
     backgroundColor: "#FFFFFF",
-  },
-  disabledSegmentButton: {
-    opacity: 0.6,
   },
   segmentLabel: {
     color: "#4B5563",
@@ -579,47 +506,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
-  takeoverList: {
-    gap: 8,
-  },
-  takeoverRow: {
-    gap: 4,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: "#FEF3C7",
-  },
-  takeoverRowStale: {
-    borderColor: "#B45309",
-    backgroundColor: "#FFEDD5",
-  },
-  takeoverPhone: {
-    color: "#111827",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  takeoverMeta: {
-    color: "#4B5563",
-    fontSize: 13,
-  },
   contactCardLink: {
     minHeight: 32,
     paddingTop: 6,
     color: "#047857",
     fontSize: 13,
     fontWeight: "700",
-  },
-  primaryLink: {
-    minHeight: 48,
-    overflow: "hidden",
-    borderRadius: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    color: "#FFFFFF",
-    backgroundColor: "#111827",
-    fontSize: 15,
-    fontWeight: "700",
-    textAlign: "center",
   },
 });

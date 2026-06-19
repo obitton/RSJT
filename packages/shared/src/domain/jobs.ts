@@ -15,6 +15,7 @@ export const JobStateSchema = z.enum([
   "completed",
   "payout_ready",
   "closed",
+  "canceled",
 ]);
 
 // Whether a job was converted from a lead conversation or created directly

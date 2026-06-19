@@ -22,6 +22,7 @@ export const jobState = pgEnum("job_state", [
   "completed",
   "payout_ready",
   "closed",
+  "canceled",
 ]);
 
 // How a job came to exist: converted from a lead conversation, or created

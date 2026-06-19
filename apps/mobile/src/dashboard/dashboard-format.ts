@@ -6,48 +6,50 @@ import type {
   PendingApprovalSummary,
 } from "@rsjt/shared";
 
-export type DashboardGroupKey =
-  | "openJobs"
-  | "scheduledJobs"
-  | "completedJobs"
-  | "unmatchedJobs"
-  | "payoutReadyJobs";
+// The bottom browser sections. "leads" lists conversations not yet converted;
+// the rest are job groups.
+export type DashboardSectionKey =
+  | "leads"
+  | "jobs"
+  | "payout"
+  | "completed"
+  | "canceled";
 
-export const DASHBOARD_GROUP_ORDER = [
-  "openJobs",
-  "scheduledJobs",
-  "completedJobs",
-  "unmatchedJobs",
-  "payoutReadyJobs",
-] as const satisfies readonly DashboardGroupKey[];
+export const DASHBOARD_SECTION_ORDER = [
+  "leads",
+  "jobs",
+  "payout",
+  "completed",
+  "canceled",
+] as const satisfies readonly DashboardSectionKey[];
 
-export function formatGroupLabel(key: DashboardGroupKey) {
+export function formatSectionLabel(key: DashboardSectionKey) {
   switch (key) {
-    case "openJobs":
-      return "Open";
-    case "scheduledJobs":
-      return "Scheduled";
-    case "completedJobs":
-      return "Completed";
-    case "unmatchedJobs":
-      return "Unmatched";
-    case "payoutReadyJobs":
+    case "leads":
+      return "Leads";
+    case "jobs":
+      return "Jobs";
+    case "payout":
       return "Payout";
+    case "completed":
+      return "Completed";
+    case "canceled":
+      return "Canceled";
   }
 }
 
-export function formatGroupEmptyCopy(key: DashboardGroupKey) {
+export function formatSectionEmptyCopy(key: DashboardSectionKey) {
   switch (key) {
-    case "openJobs":
-      return "No open jobs.";
-    case "scheduledJobs":
-      return "No scheduled jobs.";
-    case "completedJobs":
-      return "No completed jobs.";
-    case "unmatchedJobs":
-      return "No unmatched updates.";
-    case "payoutReadyJobs":
+    case "leads":
+      return "No leads yet.";
+    case "jobs":
+      return "No active jobs.";
+    case "payout":
       return "No payouts ready.";
+    case "completed":
+      return "No completed jobs.";
+    case "canceled":
+      return "No canceled jobs.";
   }
 }
 
@@ -67,6 +69,8 @@ export function formatJobStateLabel(state: JobState) {
       return "Payout ready";
     case "closed":
       return "Closed";
+    case "canceled":
+      return "Canceled";
   }
 }
 
