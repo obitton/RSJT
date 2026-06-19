@@ -136,6 +136,28 @@ function JobDetailBody({ detail }: { detail: ManagerJobDetailResponse }) {
           ))}
         </View>
       ) : null}
+      <View style={styles.panel}>
+        <Text selectable style={styles.label}>
+          Chat
+        </Text>
+        {job.conversationId ? (
+          <>
+            <Text selectable style={styles.body}>
+              Read the full conversation behind this job, or take over the chat.
+            </Text>
+            <Link
+              href={`/tech/conversations/${job.conversationId}`}
+              style={styles.chatLink}
+            >
+              Open chat
+            </Link>
+          </>
+        ) : (
+          <Text selectable style={styles.body}>
+            This job is not linked to a conversation yet.
+          </Text>
+        )}
+      </View>
     </>
   );
 }
@@ -232,6 +254,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   moneyLink: {
+    minHeight: 40,
+    paddingTop: 10,
+    color: "#047857",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  chatLink: {
     minHeight: 40,
     paddingTop: 10,
     color: "#047857",

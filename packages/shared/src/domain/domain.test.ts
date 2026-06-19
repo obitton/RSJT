@@ -209,6 +209,7 @@ describe("domain contracts", () => {
 
   it("parses a manager job detail response with optional selected match", () => {
     const jobId = "00000000-0000-4000-8000-000000010101";
+    const conversationId = "00000000-0000-4000-8000-000000020101";
     const matchId = "00000000-0000-4000-8000-000000030101";
     const approvalId = "00000000-0000-4000-8000-000000040101";
     const updatedAt = new Date("2026-05-22T12:00:00.000Z");
@@ -216,6 +217,7 @@ describe("domain contracts", () => {
     const response = ManagerJobDetailResponseSchema.parse({
       job: {
         id: jobId,
+        conversationId,
         state: "accepted",
         customerLabel: "Local laptop repair",
         updatedAt,
@@ -243,6 +245,7 @@ describe("domain contracts", () => {
       },
     });
 
+    expect(response.job.conversationId).toBe(conversationId);
     expect(response.selectedMatch?.confidenceBand).toBe("high");
     expect(response.pendingApprovals[0]?.kind).toBe("customer_message");
   });

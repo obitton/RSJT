@@ -153,6 +153,11 @@ export const jobs = pgTable(
   "jobs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    // The lead (conversation) this job originated from. Nullable because jobs
+    // can predate the lead lifecycle; REV01 slice 7 sets it on conversion.
+    conversationId: uuid("conversation_id").references(() => conversations.id, {
+      onDelete: "set null",
+    }),
     state: jobState("state").notNull().default("unmatched"),
     customerLabel: text("customer_label"),
     repairShoprEntityType: text("repairshopr_entity_type"),
@@ -172,6 +177,7 @@ export const jobs = pgTable(
   },
   (table) => [
     index("jobs_state_idx").on(table.state),
+    index("jobs_conversation_id_idx").on(table.conversationId),
     index("jobs_repairshopr_ref_idx").on(
       table.repairShoprEntityType,
       table.repairShoprId,

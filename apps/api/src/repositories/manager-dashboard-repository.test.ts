@@ -169,7 +169,11 @@ describe("ManagerDashboardRepository", () => {
 
   it("returns job detail with selected match and pending approvals", async () => {
     const userId = await createUser("manager");
+    const conversationId = await createConversation({
+      externalPhone: "+15555550300",
+    });
     const jobId = await createJob({
+      conversationId,
       state: "accepted",
       customerLabel: "Detailed job",
       repairShoprEntityType: "ticket",
@@ -198,6 +202,7 @@ describe("ManagerDashboardRepository", () => {
     const detail = await repository.getJobDetail(jobId);
     expect(detail).not.toBeNull();
     expect(detail?.job.id).toBe(jobId);
+    expect(detail?.job.conversationId).toBe(conversationId);
     expect(detail?.job.pendingApprovalCount).toBe(1);
     expect(detail?.job.repairShoprReference?.repairShoprId).toBe(
       "local-ticket-301",
@@ -205,6 +210,18 @@ describe("ManagerDashboardRepository", () => {
     expect(detail?.pendingApprovals).toHaveLength(1);
     expect(detail?.selectedMatch?.confidenceBand).toBe("high");
     expect(detail?.selectedMatch?.confidence).toBeCloseTo(0.9, 5);
+  });
+
+  it("leaves conversationId unset for jobs without a linked conversation", async () => {
+    const jobId = await createJob({
+      state: "accepted",
+      customerLabel: "Unlinked job",
+      updatedAt: new Date("2026-05-22T10:00:00.000Z"),
+    });
+
+    const detail = await repository.getJobDetail(jobId);
+    expect(detail).not.toBeNull();
+    expect(detail?.job.conversationId).toBeUndefined();
   });
 
   it("returns null when the job does not exist", async () => {

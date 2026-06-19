@@ -246,6 +246,11 @@ function toDashboardJob(value: unknown): ManagerDashboardJob | null {
     return null;
   }
 
+  const conversationId = toOptionalNonEmptyString(value.conversationId);
+  if (conversationId === null) {
+    return null;
+  }
+
   const customerLabel = toOptionalNonEmptyString(value.customerLabel);
   if (customerLabel === null) {
     return null;
@@ -296,6 +301,7 @@ function toDashboardJob(value: unknown): ManagerDashboardJob | null {
     state: value.state,
     updatedAt,
     pendingApprovalCount: value.pendingApprovalCount,
+    ...(conversationId ? { conversationId } : {}),
     ...(customerLabel ? { customerLabel } : {}),
     ...(repairShoprReference ? { repairShoprReference } : {}),
     ...(splitCategory ? { splitCategory } : {}),
