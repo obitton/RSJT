@@ -119,6 +119,7 @@ export default function TechConversationDetailScreen() {
             onToggleTakeover={(active) => takeoverMutation.mutate(active)}
           />
           <ConvertToJobPanel
+            alreadyJob={Boolean(detailQuery.data.conversation.jobId)}
             isConverting={convertMutation.isPending}
             convertedState={convertMutation.data?.job.state ?? null}
             convertError={convertMutation.error}
@@ -251,44 +252,55 @@ function ConversationBody({
 }
 
 function ConvertToJobPanel({
+  alreadyJob,
   isConverting,
   convertedState,
   convertError,
   onConvert,
 }: {
+  alreadyJob: boolean;
   isConverting: boolean;
   convertedState: string | null;
   convertError: unknown;
   onConvert: () => void;
 }) {
+  // A lead that is already a job (on load or just converted this session) gets
+  // an informational note instead of a convert button.
+  if (alreadyJob || convertedState) {
+    return (
+      <Panel>
+        <Text selectable style={styles.panelTitle}>
+          Job
+        </Text>
+        <Text selectable style={styles.body}>
+          {convertedState
+            ? `This lead is now a job (state: ${convertedState}).`
+            : "This lead has already been converted to a job."}
+        </Text>
+      </Panel>
+    );
+  }
+
   return (
     <Panel>
       <Text selectable style={styles.panelTitle}>
         Convert to job
       </Text>
-      {convertedState ? (
-        <Text selectable style={styles.body}>
-          This lead is now a job (state: {convertedState}).
+      <Text selectable style={styles.body}>
+        Create a job from this lead. The lead must have an approved schedule and
+        not already be a job.
+      </Text>
+      {convertError ? (
+        <Text selectable style={styles.errorText}>
+          {getErrorMessage(convertError)}
         </Text>
-      ) : (
-        <>
-          <Text selectable style={styles.body}>
-            Create a job from this lead. The lead must have an approved schedule
-            and not already be a job.
-          </Text>
-          {convertError ? (
-            <Text selectable style={styles.errorText}>
-              {getErrorMessage(convertError)}
-            </Text>
-          ) : null}
-          <ActionButton
-            disabled={isConverting}
-            label="Convert to job"
-            loading={isConverting}
-            onPress={onConvert}
-          />
-        </>
-      )}
+      ) : null}
+      <ActionButton
+        disabled={isConverting}
+        label="Convert to job"
+        loading={isConverting}
+        onPress={onConvert}
+      />
     </Panel>
   );
 }

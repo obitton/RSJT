@@ -4,6 +4,7 @@ import {
   conversations,
   createDb,
   createPool,
+  jobs,
   messages,
   users,
 } from "@rsjt/db";
@@ -22,6 +23,7 @@ describe("ConversationsRepository", () => {
   const createdConversationIds: string[] = [];
   const createdMessageIds: string[] = [];
   const createdUserIds: string[] = [];
+  const createdJobIds: string[] = [];
 
   beforeAll(() => {
     pool = createPool(databaseUrl);
@@ -30,6 +32,10 @@ describe("ConversationsRepository", () => {
   });
 
   afterEach(async () => {
+    if (createdJobIds.length > 0) {
+      await db.delete(jobs).where(inArray(jobs.id, createdJobIds));
+      createdJobIds.length = 0;
+    }
     if (createdMessageIds.length > 0) {
       await db.delete(messages).where(inArray(messages.id, createdMessageIds));
       createdMessageIds.length = 0;
@@ -154,6 +160,24 @@ describe("ConversationsRepository", () => {
       inboundRow.id,
       outbound.id,
     ]);
+  });
+
+  it("reports the linked job id once the lead has been converted", async () => {
+    const conversationId = await createConversation({
+      externalPhone: `+15555${Date.now().toString().slice(-6)}`,
+    });
+
+    const beforeConvert = await repository.getDetail(conversationId);
+    expect(beforeConvert?.jobId).toBeNull();
+
+    const jobId = randomUUID();
+    createdJobIds.push(jobId);
+    await db
+      .insert(jobs)
+      .values({ id: jobId, conversationId, state: "scheduled" });
+
+    const afterConvert = await repository.getDetail(conversationId);
+    expect(afterConvert?.jobId).toBe(jobId);
   });
 
   async function createUser() {

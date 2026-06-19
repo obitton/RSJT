@@ -407,6 +407,7 @@ function conversationDetail(
 ): ConversationDetail {
   return {
     ...conversationSummary(),
+    jobId: null,
     messages: [],
     ...overrides,
   };
