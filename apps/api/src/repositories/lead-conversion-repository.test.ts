@@ -8,7 +8,7 @@ import {
   messages,
   schedulingProposals,
 } from "@rsjt/db";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { LeadConversionRepository } from "./lead-conversion-repository.js";
 
@@ -121,6 +121,13 @@ describe("LeadConversionRepository", () => {
     expect(job.state).toBe("scheduled");
     expect(job.customerLabel).toBe("Jordan Rivera");
     expect(job.repairShoprReference?.repairShoprId).toBe("cust-9");
+
+    const [row] = await db
+      .select({ origin: jobs.origin })
+      .from(jobs)
+      .where(eq(jobs.id, job.id))
+      .limit(1);
+    expect(row?.origin).toBe("lead");
 
     const found = await repository.getJobByConversationId(conversationId);
     expect(found?.id).toBe(job.id);

@@ -17,6 +17,10 @@ export const JobStateSchema = z.enum([
   "closed",
 ]);
 
+// Whether a job was converted from a lead conversation or created directly
+// (walk-in, phone-in, import).
+export const JobOriginSchema = z.enum(["lead", "manual"]);
+
 export const ExtractedFactTypeSchema = z.enum([
   "customer_hint",
   "work_performed",
@@ -61,6 +65,7 @@ export const JobUpdateFeedResponseSchema = z.object({
 });
 
 export type JobState = z.infer<typeof JobStateSchema>;
+export type JobOrigin = z.infer<typeof JobOriginSchema>;
 export type ExtractedFactType = z.infer<typeof ExtractedFactTypeSchema>;
 export type SourceEvidence = z.infer<typeof SourceEvidenceSchema>;
 export type MatchCandidate = z.infer<typeof MatchCandidateSchema>;

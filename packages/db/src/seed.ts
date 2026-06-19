@@ -1,5 +1,5 @@
 import argon2 from "argon2";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createDb, createPool } from "./connection.js";
 import {
   conversations,
@@ -44,7 +44,9 @@ await db
   .insert(jobs)
   .values([
     {
+      // Linked to Casey's conversation below, so this represents a lead-based job.
       id: "00000000-0000-4000-8000-000000010101",
+      origin: "lead",
       state: "accepted",
       customerLabel: "Local laptop repair",
       repairShoprEntityType: "ticket",
@@ -54,6 +56,8 @@ await db
     },
     {
       id: "00000000-0000-4000-8000-000000010102",
+      origin: "manual",
+      originNote: "Phone-in booking entered by the office, no chat thread.",
       state: "scheduled",
       customerLabel: "Scheduled onsite setup",
       repairShoprEntityType: "ticket",
@@ -62,12 +66,21 @@ await db
     },
     {
       id: "00000000-0000-4000-8000-000000010103",
+      origin: "manual",
+      originNote: "Walk-in customer; job created at the counter.",
       state: "unmatched",
       customerLabel: "Unmatched walk-in update",
       updatedAt: new Date("2026-05-22T14:00:00.000Z"),
     },
   ])
-  .onConflictDoNothing();
+  // Refresh origin/originNote on re-seed so existing demo jobs pick up the tags.
+  .onConflictDoUpdate({
+    target: jobs.id,
+    set: {
+      origin: sql`excluded.origin`,
+      originNote: sql`excluded.origin_note`,
+    },
+  });
 
 const demoConversationId = "00000000-0000-4000-8000-000000020101";
 const demoInboundMessageId = "00000000-0000-4000-8000-000000020102";

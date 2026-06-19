@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ApprovalKindSchema, ApprovalRiskSchema } from "./approvals.js";
 import { MatchConfidenceBandSchema } from "./confidence.js";
 import { CustomerIntakeStateSchema } from "./intake.js";
-import { JobStateSchema } from "./jobs.js";
+import { JobOriginSchema, JobStateSchema } from "./jobs.js";
 import {
   MoneyCentsSchema,
   ProfitBasisSchema,
@@ -33,6 +33,10 @@ export const ManagerDashboardJobSchema = z.object({
   // The lead (conversation) this job originated from; absent for jobs that
   // predate the lead lifecycle.
   conversationId: z.string().uuid().optional(),
+  // How the job was created, plus an optional note explaining a manual job's
+  // source (where a walk-in / phone-in / import came from).
+  origin: JobOriginSchema,
+  originNote: z.string().min(1).optional(),
   state: JobStateSchema,
   customerLabel: z.string().min(1).optional(),
   updatedAt: z.date(),

@@ -7,6 +7,7 @@ import {
   formatApprovalRiskLabel,
   formatConfidenceBandLabel,
   formatJobChargeLabel,
+  formatJobOriginLabel,
   formatJobStateLabel,
   formatPendingApprovalLabel,
 } from "@/dashboard/dashboard-format";
@@ -91,6 +92,7 @@ function JobDetailBody({ detail }: { detail: ManagerJobDetailResponse }) {
       </View>
       <View style={styles.panel}>
         <Row label="State" value={formatJobStateLabel(job.state)} />
+        <Row label="Origin" value={formatJobOriginLabel(job.origin)} />
         <Row
           label="RepairShopr link"
           value={
@@ -152,6 +154,12 @@ function JobDetailBody({ detail }: { detail: ManagerJobDetailResponse }) {
               Open chat
             </Link>
           </>
+        ) : job.origin === "manual" ? (
+          <Text selectable style={styles.body}>
+            {job.originNote
+              ? `Created manually, so there is no customer chat. ${job.originNote}`
+              : "Created manually, so there is no customer chat."}
+          </Text>
         ) : (
           <Text selectable style={styles.body}>
             This job is not linked to a conversation yet.

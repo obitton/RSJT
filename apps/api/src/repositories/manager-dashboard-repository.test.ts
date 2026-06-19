@@ -229,6 +229,7 @@ describe("ManagerDashboardRepository", () => {
     const detail = await repository.getJobDetail(jobId);
     expect(detail).not.toBeNull();
     expect(detail?.job.id).toBe(jobId);
+    expect(detail?.job.origin).toBe("manual");
     expect(detail?.job.conversationId).toBe(conversationId);
     expect(detail?.job.pendingApprovalCount).toBe(1);
     expect(detail?.job.repairShoprReference?.repairShoprId).toBe(

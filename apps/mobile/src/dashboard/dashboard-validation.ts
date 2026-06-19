@@ -1,6 +1,7 @@
 import { isRecord } from "@/auth/session-validation";
 import type {
   CustomerIntakeState,
+  JobOrigin,
   JobState,
   LeadDetail,
   LeadSummary,
@@ -30,6 +31,8 @@ const JOB_STATES = [
   "payout_ready",
   "closed",
 ] as const satisfies readonly JobState[];
+
+const JOB_ORIGINS = ["lead", "manual"] as const satisfies readonly JobOrigin[];
 
 const SPLIT_CATEGORIES = [
   "returning_repairshopr_customer",
@@ -234,6 +237,7 @@ function toDashboardJob(value: unknown): ManagerDashboardJob | null {
     !isRecord(value) ||
     typeof value.id !== "string" ||
     !isJobState(value.state) ||
+    !isJobOrigin(value.origin) ||
     typeof value.pendingApprovalCount !== "number" ||
     !Number.isInteger(value.pendingApprovalCount) ||
     value.pendingApprovalCount < 0
@@ -248,6 +252,11 @@ function toDashboardJob(value: unknown): ManagerDashboardJob | null {
 
   const conversationId = toOptionalNonEmptyString(value.conversationId);
   if (conversationId === null) {
+    return null;
+  }
+
+  const originNote = toOptionalNonEmptyString(value.originNote);
+  if (originNote === null) {
     return null;
   }
 
@@ -299,9 +308,11 @@ function toDashboardJob(value: unknown): ManagerDashboardJob | null {
   return {
     id: value.id,
     state: value.state,
+    origin: value.origin,
     updatedAt,
     pendingApprovalCount: value.pendingApprovalCount,
     ...(conversationId ? { conversationId } : {}),
+    ...(originNote ? { originNote } : {}),
     ...(customerLabel ? { customerLabel } : {}),
     ...(repairShoprReference ? { repairShoprReference } : {}),
     ...(splitCategory ? { splitCategory } : {}),
@@ -640,6 +651,10 @@ function toDate(value: unknown): Date | null {
 
 function isJobState(value: unknown): value is JobState {
   return JOB_STATES.some((state) => state === value);
+}
+
+function isJobOrigin(value: unknown): value is JobOrigin {
+  return JOB_ORIGINS.some((origin) => origin === value);
 }
 
 function isSplitCategory(value: unknown): value is SplitCategory {

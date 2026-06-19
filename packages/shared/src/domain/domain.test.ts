@@ -165,6 +165,7 @@ describe("domain contracts", () => {
           {
             id: jobId,
             state: "accepted",
+            origin: "lead",
             customerLabel: "Local laptop repair",
             updatedAt,
             grossChargeCents: 18000,
@@ -178,6 +179,8 @@ describe("domain contracts", () => {
           {
             id: "00000000-0000-4000-8000-000000010103",
             state: "unmatched",
+            origin: "manual",
+            originNote: "Walk-in customer update.",
             customerLabel: "Unmatched walk-in update",
             updatedAt,
             pendingApprovalCount: 0,
@@ -219,6 +222,7 @@ describe("domain contracts", () => {
         id: jobId,
         conversationId,
         state: "accepted",
+        origin: "lead",
         customerLabel: "Local laptop repair",
         updatedAt,
         grossChargeCents: 18000,
@@ -462,6 +466,7 @@ describe("domain contracts", () => {
         job: {
           id: "not-a-uuid",
           state: "accepted",
+          origin: "lead",
           updatedAt: new Date(),
           pendingApprovalCount: 0,
         },
@@ -474,6 +479,7 @@ describe("domain contracts", () => {
         job: {
           id: "00000000-0000-4000-8000-000000010101",
           state: "fictional",
+          origin: "lead",
           updatedAt: new Date(),
           pendingApprovalCount: 0,
         },

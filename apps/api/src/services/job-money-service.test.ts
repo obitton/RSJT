@@ -215,6 +215,8 @@ function recordFixture(input: {
     job: {
       id: jobId,
       conversationId: null,
+      origin: "manual",
+      originNote: null,
       state: input.state ?? "accepted",
       customerLabel: "Money job",
       repairShoprEntityType: null,

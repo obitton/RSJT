@@ -24,6 +24,10 @@ export const jobState = pgEnum("job_state", [
   "closed",
 ]);
 
+// How a job came to exist: converted from a lead conversation, or created
+// directly (walk-in, phone-in, import) with no originating chat.
+export const jobOrigin = pgEnum("job_origin", ["lead", "manual"]);
+
 export const approvalState = pgEnum("approval_state", [
   "pending",
   "approved",
@@ -158,6 +162,10 @@ export const jobs = pgTable(
     conversationId: uuid("conversation_id").references(() => conversations.id, {
       onDelete: "set null",
     }),
+    // Provenance of the job. Defaults to "manual" so any job not created by the
+    // lead-to-job conversion (which sets "lead") is clearly flagged as direct.
+    origin: jobOrigin("origin").notNull().default("manual"),
+    originNote: text("origin_note"),
     state: jobState("state").notNull().default("unmatched"),
     customerLabel: text("customer_label"),
     repairShoprEntityType: text("repairshopr_entity_type"),

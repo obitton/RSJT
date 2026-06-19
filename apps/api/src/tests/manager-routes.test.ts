@@ -384,6 +384,7 @@ function dashboardResponse(): ManagerDashboardResponse {
         {
           id: jobId,
           state: "accepted",
+          origin: "lead",
           customerLabel: "Local laptop repair",
           updatedAt,
           grossChargeCents: 18000,
@@ -397,6 +398,8 @@ function dashboardResponse(): ManagerDashboardResponse {
         {
           id: "00000000-0000-4000-8000-000000010102",
           state: "unmatched",
+          origin: "manual",
+          originNote: "Walk-in customer.",
           customerLabel: "Unmatched walk-in",
           updatedAt,
           pendingApprovalCount: 0,
@@ -425,6 +428,7 @@ function jobDetailResponse(): ManagerJobDetailResponse {
       id: jobId,
       conversationId: "00000000-0000-4000-8000-000000020101",
       state: "accepted",
+      origin: "lead",
       customerLabel: "Local laptop repair",
       updatedAt,
       grossChargeCents: 18000,
