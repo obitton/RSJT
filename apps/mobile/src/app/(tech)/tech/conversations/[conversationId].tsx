@@ -63,6 +63,16 @@ export default function TechConversationDetailScreen() {
     },
   });
 
+  const convertMutation = useMutation({
+    mutationFn: () =>
+      apiClient.convertLeadToJob(requireToken(token), conversationId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["tech-conversations", token],
+      });
+    },
+  });
+
   if (!conversationId) {
     return (
       <Screen>
@@ -97,16 +107,24 @@ export default function TechConversationDetailScreen() {
           />
         </Panel>
       ) : detailQuery.data ? (
-        <ConversationBody
-          detail={detailQuery.data.conversation}
-          draft={draft}
-          isSending={sendMutation.isPending}
-          isTogglingTakeover={takeoverMutation.isPending}
-          sendError={sendMutation.error}
-          onChangeDraft={setDraft}
-          onSend={() => sendMutation.mutate(draft.trim())}
-          onToggleTakeover={(active) => takeoverMutation.mutate(active)}
-        />
+        <>
+          <ConversationBody
+            detail={detailQuery.data.conversation}
+            draft={draft}
+            isSending={sendMutation.isPending}
+            isTogglingTakeover={takeoverMutation.isPending}
+            sendError={sendMutation.error}
+            onChangeDraft={setDraft}
+            onSend={() => sendMutation.mutate(draft.trim())}
+            onToggleTakeover={(active) => takeoverMutation.mutate(active)}
+          />
+          <ConvertToJobPanel
+            isConverting={convertMutation.isPending}
+            convertedState={convertMutation.data?.job.state ?? null}
+            convertError={convertMutation.error}
+            onConvert={() => convertMutation.mutate()}
+          />
+        </>
       ) : null}
     </Screen>
   );
@@ -229,6 +247,49 @@ function ConversationBody({
         />
       </Panel>
     </>
+  );
+}
+
+function ConvertToJobPanel({
+  isConverting,
+  convertedState,
+  convertError,
+  onConvert,
+}: {
+  isConverting: boolean;
+  convertedState: string | null;
+  convertError: unknown;
+  onConvert: () => void;
+}) {
+  return (
+    <Panel>
+      <Text selectable style={styles.panelTitle}>
+        Convert to job
+      </Text>
+      {convertedState ? (
+        <Text selectable style={styles.body}>
+          This lead is now a job (state: {convertedState}).
+        </Text>
+      ) : (
+        <>
+          <Text selectable style={styles.body}>
+            Create a job from this lead. The lead must have an approved schedule
+            and not already be a job.
+          </Text>
+          {convertError ? (
+            <Text selectable style={styles.errorText}>
+              {getErrorMessage(convertError)}
+            </Text>
+          ) : null}
+          <ActionButton
+            disabled={isConverting}
+            label="Convert to job"
+            loading={isConverting}
+            onPress={onConvert}
+          />
+        </>
+      )}
+    </Panel>
   );
 }
 

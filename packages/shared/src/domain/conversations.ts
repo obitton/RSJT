@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { JobSummarySchema } from "./jobs.js";
 
 export const ConversationMessageDirectionSchema = z.enum([
   "inbound",
@@ -71,6 +72,11 @@ export const SendConversationMessageResponseSchema = z.object({
   message: ConversationMessageSchema,
 });
 
+// Converting a lead (conversation) into a job returns the job that was created.
+export const ConvertLeadToJobResponseSchema = z.object({
+  job: JobSummarySchema,
+});
+
 export type ConversationMessageDirection = z.infer<
   typeof ConversationMessageDirectionSchema
 >;
@@ -91,4 +97,7 @@ export type SendConversationMessageRequest = z.infer<
 >;
 export type SendConversationMessageResponse = z.infer<
   typeof SendConversationMessageResponseSchema
+>;
+export type ConvertLeadToJobResponse = z.infer<
+  typeof ConvertLeadToJobResponseSchema
 >;

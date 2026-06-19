@@ -26,7 +26,16 @@ import {
   type TakeoverConversationSummary,
   TakeoverConversationSummarySchema,
 } from "@rsjt/shared";
-import { and, count, desc, eq, inArray, isNotNull, ne } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  ne,
+  notExists,
+} from "drizzle-orm";
 
 const OPEN_STATES = ["intake", "accepted"] as const;
 const SCHEDULED_STATES = ["scheduled"] as const;
@@ -244,13 +253,27 @@ export class ManagerDashboardRepository {
     });
   }
 
+  // A conversation that has already been converted to a job is no longer a
+  // lead, so it drops off the lead surfaces and lives on the jobs side instead.
+  private notConvertedToJob() {
+    return notExists(
+      this.db
+        .select({ id: jobs.id })
+        .from(jobs)
+        .where(eq(jobs.conversationId, conversations.id)),
+    );
+  }
+
   private async listLeads(): Promise<LeadSummary[]> {
-    // A lead is any conversation that is not blocked. Spam is folded into the
-    // blocked intake state, so excluding "blocked" excludes spam too.
+    // A lead is any conversation that is not blocked and has not yet become a
+    // job. Spam is folded into the blocked intake state, so excluding "blocked"
+    // excludes spam too.
     const rows = await this.db
       .select()
       .from(conversations)
-      .where(ne(conversations.intakeState, "blocked"))
+      .where(
+        and(ne(conversations.intakeState, "blocked"), this.notConvertedToJob()),
+      )
       .orderBy(desc(conversations.updatedAt));
 
     if (rows.length === 0) {
@@ -316,7 +339,9 @@ export class ManagerDashboardRepository {
         updatedAt: conversations.updatedAt,
       })
       .from(conversations)
-      .where(eq(conversations.takeoverActive, true))
+      .where(
+        and(eq(conversations.takeoverActive, true), this.notConvertedToJob()),
+      )
       .orderBy(desc(conversations.updatedAt));
 
     return rows.map((row) =>

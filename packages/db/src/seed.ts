@@ -1,7 +1,13 @@
 import argon2 from "argon2";
 import { eq } from "drizzle-orm";
 import { createDb, createPool } from "./connection.js";
-import { conversations, jobs, messages, users } from "./schema.js";
+import {
+  conversations,
+  jobs,
+  messages,
+  schedulingProposals,
+  users,
+} from "./schema.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -169,6 +175,95 @@ await db
       createdAt: new Date("2026-05-26T14:03:00.000Z"),
     },
   ])
+  .onConflictDoNothing();
+
+// A second lead that is scheduled but not yet a job, so the "Convert to job"
+// action has something to act on. The first demo lead already has a job, which
+// would correctly hit the already-converted guard.
+const convertibleConversationId = "00000000-0000-4000-8000-000000020201";
+const convertibleInboundMessageId = "00000000-0000-4000-8000-000000020202";
+const convertibleProposalId = "00000000-0000-4000-8000-000000020203";
+
+// Reset this demo lead's dependent rows so every seed run leaves it freshly
+// eligible to convert (a tech reply plus a timed, approved appointment) and
+// removes any job created by a previous demo conversion.
+await db.delete(jobs).where(eq(jobs.conversationId, convertibleConversationId));
+await db
+  .delete(schedulingProposals)
+  .where(eq(schedulingProposals.conversationId, convertibleConversationId));
+await db
+  .delete(messages)
+  .where(eq(messages.conversationId, convertibleConversationId));
+
+await db
+  .insert(conversations)
+  .values({
+    id: convertibleConversationId,
+    externalPhone: "+15555550300",
+    takeoverActive: false,
+    intakeState: "review_ready",
+    customerName: "Jordan Rivera",
+    problemDescription: "Desktop keeps restarting at random.",
+    preferredTiming: "Weekday mornings",
+    spamScore: 0,
+    lastInboundAt: new Date("2026-05-27T15:00:00.000Z"),
+    updatedAt: new Date("2026-05-27T15:05:00.000Z"),
+  })
+  .onConflictDoNothing();
+
+await db
+  .insert(messages)
+  .values([
+    {
+      id: convertibleInboundMessageId,
+      conversationId: convertibleConversationId,
+      direction: "inbound",
+      authorRole: null,
+      body: "Hi, my desktop keeps restarting at random. When can a technician come take a look?",
+      twilioMessageSid: "SMlocaldemo010",
+      createdAt: new Date("2026-05-27T15:00:00.000Z"),
+    },
+    {
+      // A tech reply, so the lead counts as answered ("working on") and is
+      // eligible for conversion. Outbound is gated locally, hence "blocked".
+      id: "00000000-0000-4000-8000-000000020204",
+      conversationId: convertibleConversationId,
+      direction: "outbound",
+      authorRole: "tech",
+      body: "Happy to help. Would Tuesday at 9 AM work for an onsite visit?",
+      externalStatus: "blocked",
+      createdAt: new Date("2026-05-27T15:02:00.000Z"),
+    },
+  ])
+  .onConflictDoNothing();
+
+await db
+  .insert(schedulingProposals)
+  .values({
+    id: convertibleProposalId,
+    conversationId: convertibleConversationId,
+    jobId: null,
+    state: "approved",
+    preferredWindowText: "Weekday mornings",
+    // A concrete appointment time, so this is a booked appointment rather than
+    // an open-ended proposal.
+    startAt: new Date("2026-06-02T13:00:00.000Z"),
+    endAt: new Date("2026-06-02T14:00:00.000Z"),
+    customerMessageBody: "Would Tuesday at 9 AM work for a visit?",
+    repairShoprAppointmentPayload: {
+      status: "staged",
+      customerLabel: "Jordan Rivera",
+      notes: "Desktop restarting; onsite diagnostic.",
+    },
+    sourceEvidence: [
+      {
+        messageId: convertibleInboundMessageId,
+        quote: "my desktop keeps restarting at random",
+      },
+    ],
+    decidedAt: new Date("2026-05-27T15:05:00.000Z"),
+    updatedAt: new Date("2026-05-27T15:05:00.000Z"),
+  })
   .onConflictDoNothing();
 
 await pool.end();

@@ -18,6 +18,7 @@ import { ExtractedFactsRepository } from "./repositories/extracted-facts-reposit
 import { IntakeRepository } from "./repositories/intake-repository.js";
 import { JobMoneyRepository } from "./repositories/job-money-repository.js";
 import { JobsRepository } from "./repositories/jobs-repository.js";
+import { LeadConversionRepository } from "./repositories/lead-conversion-repository.js";
 import { ManagerDashboardRepository } from "./repositories/manager-dashboard-repository.js";
 import { MatchesRepository } from "./repositories/matches-repository.js";
 import { MessagesRepository } from "./repositories/messages-repository.js";
@@ -60,6 +61,10 @@ import {
   JobUpdateFeedService,
   type JobUpdateFeedServiceApi,
 } from "./services/job-update-feed-service.js";
+import {
+  LeadConversionService,
+  type LeadConversionServiceApi,
+} from "./services/lead-conversion-service.js";
 import {
   LiveTakeoverService,
   type LiveTakeoverServiceApi,
@@ -104,6 +109,7 @@ type AppOptions = {
   intakeBotUserId?: string;
   jobMoneyService?: JobMoneyServiceApi;
   jobUpdateFeedService?: JobUpdateFeedServiceApi;
+  leadConversionService?: LeadConversionServiceApi;
   liveTakeoverService?: LiveTakeoverServiceApi;
   managerDashboardService?: ManagerDashboardServiceApi;
   matchingService?: MatchingServiceApi;
@@ -193,6 +199,7 @@ export async function buildApp(config: ApiConfig, options: AppOptions = {}) {
     app,
     options.liveTakeoverService ??
       createDefaultLiveTakeoverService(app, config),
+    options.leadConversionService ?? createDefaultLeadConversionService(app),
   );
   await registerSchedulingRoutes(
     app,
@@ -346,6 +353,13 @@ function createDefaultLiveTakeoverService(
     new TwilioOutboundMessenger(config),
     { channel: config.MESSAGING_CHANNEL },
   );
+}
+
+function createDefaultLeadConversionService(app: FastifyInstance) {
+  if (!app.hasDecorator("db")) {
+    return undefined;
+  }
+  return new LeadConversionService(new LeadConversionRepository(app.db));
 }
 
 function createDefaultWritebackExecutionService(

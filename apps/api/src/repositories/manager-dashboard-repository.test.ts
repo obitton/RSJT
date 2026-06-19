@@ -167,6 +167,33 @@ describe("ManagerDashboardRepository", () => {
     expect(ids).not.toContain(inactiveConversationId);
   });
 
+  it("drops a conversation from leads and takeover once it has a job", async () => {
+    const convertedId = await createConversation({
+      takeoverActive: true,
+      externalPhone: "+15555550400",
+    });
+    await createJob({
+      state: "scheduled",
+      customerLabel: "Converted lead",
+      conversationId: convertedId,
+      updatedAt: new Date("2026-05-27T10:00:00.000Z"),
+    });
+    const openLeadId = await createConversation({
+      takeoverActive: true,
+      externalPhone: "+15555550401",
+    });
+
+    const dashboard = await repository.getDashboard();
+
+    const leadIds = dashboard.leads.map((lead) => lead.id);
+    expect(leadIds).toContain(openLeadId);
+    expect(leadIds).not.toContain(convertedId);
+
+    const takeoverIds = dashboard.takeoverConversations.map((conv) => conv.id);
+    expect(takeoverIds).toContain(openLeadId);
+    expect(takeoverIds).not.toContain(convertedId);
+  });
+
   it("returns job detail with selected match and pending approvals", async () => {
     const userId = await createUser("manager");
     const conversationId = await createConversation({

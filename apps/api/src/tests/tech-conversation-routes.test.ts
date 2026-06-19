@@ -2,6 +2,7 @@ import type {
   ConversationDetail,
   ConversationMessage,
   ConversationSummary,
+  JobSummary,
   SendConversationMessageRequest,
   SessionUser,
 } from "@rsjt/shared";
@@ -9,6 +10,12 @@ import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
 import type { ApiConfig } from "../config.js";
 import type { AuthSessionService } from "../services/auth-service.js";
+import {
+  LeadAlreadyConvertedError,
+  type LeadConversionServiceApi,
+  LeadNotAnsweredError,
+  LeadNotScheduledError,
+} from "../services/lead-conversion-service.js";
 import {
   ConversationNotFoundError,
   type LiveTakeoverServiceApi,
@@ -192,6 +199,100 @@ describe("tech conversation routes", () => {
 
     await app.close();
   });
+
+  it("converts a scheduled lead to a job for both tech and manager", async () => {
+    const conversionService = new TestLeadConversionService();
+    const app = await buildApp(testConfig(), {
+      authService: new TestAuthService(),
+      liveTakeoverService: new TestLiveTakeoverService(),
+      leadConversionService: conversionService,
+    });
+
+    const techResponse = await app.inject({
+      method: "POST",
+      url: `/tech/conversations/${conversationId}/convert-to-job`,
+      headers: authHeader("tech"),
+    });
+    expect(techResponse.statusCode).toBe(200);
+    expect(techResponse.json()).toMatchObject({ job: { state: "scheduled" } });
+
+    const managerResponse = await app.inject({
+      method: "POST",
+      url: `/tech/conversations/${conversationId}/convert-to-job`,
+      headers: authHeader("manager"),
+    });
+    expect(managerResponse.statusCode).toBe(200);
+
+    expect(conversionService.calls).toHaveLength(2);
+    expect(conversionService.calls[0]?.user.role).toBe("tech");
+    expect(conversionService.calls[1]?.user.role).toBe("manager");
+
+    await app.close();
+  });
+
+  it("maps conversion conflicts to 409", async () => {
+    const conversionService = new TestLeadConversionService();
+    const app = await buildApp(testConfig(), {
+      authService: new TestAuthService(),
+      liveTakeoverService: new TestLiveTakeoverService(),
+      leadConversionService: conversionService,
+    });
+
+    conversionService.nextError = new LeadNotAnsweredError();
+    const notAnswered = await app.inject({
+      method: "POST",
+      url: `/tech/conversations/${conversationId}/convert-to-job`,
+      headers: authHeader("tech"),
+    });
+    expect(notAnswered.statusCode).toBe(409);
+    expect(notAnswered.json()).toEqual({
+      error: "A lead must be answered by a tech before it can become a job",
+    });
+
+    conversionService.nextError = new LeadNotScheduledError();
+    const notScheduled = await app.inject({
+      method: "POST",
+      url: `/tech/conversations/${conversationId}/convert-to-job`,
+      headers: authHeader("tech"),
+    });
+    expect(notScheduled.statusCode).toBe(409);
+    expect(notScheduled.json()).toEqual({
+      error:
+        "Lead must have a scheduled appointment before it can become a job",
+    });
+
+    conversionService.nextError = new LeadAlreadyConvertedError();
+    const alreadyConverted = await app.inject({
+      method: "POST",
+      url: `/tech/conversations/${conversationId}/convert-to-job`,
+      headers: authHeader("manager"),
+    });
+    expect(alreadyConverted.statusCode).toBe(409);
+    expect(alreadyConverted.json()).toEqual({
+      error: "Lead has already been converted to a job",
+    });
+
+    await app.close();
+  });
+
+  it("returns 503 when the lead conversion service is unavailable", async () => {
+    const app = await buildApp(testConfig(), {
+      authService: new TestAuthService(),
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/tech/conversations/${conversationId}/convert-to-job`,
+      headers: authHeader("tech"),
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({
+      error: "Lead conversion service unavailable",
+    });
+
+    await app.close();
+  });
 });
 
 class TestAuthService implements AuthSessionService {
@@ -260,6 +361,25 @@ class TestLiveTakeoverService implements LiveTakeoverServiceApi {
 
   triggerNotFound() {
     this.nextSendError = new ConversationNotFoundError();
+  }
+}
+
+class TestLeadConversionService implements LeadConversionServiceApi {
+  nextError: Error | null = null;
+  readonly calls: Array<{ user: SessionUser; conversationId: string }> = [];
+
+  async convertToJob(user: SessionUser, convoId: string) {
+    this.calls.push({ user, conversationId: convoId });
+    if (this.nextError) {
+      const error = this.nextError;
+      this.nextError = null;
+      throw error;
+    }
+    return {
+      id: "00000000-0000-4000-8000-0000000a0001",
+      state: "scheduled",
+      customerLabel: "Jordan Rivera",
+    } satisfies JobSummary;
   }
 }
 
