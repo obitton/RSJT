@@ -142,8 +142,14 @@ function toConversationDetail(value: unknown): ConversationDetail | null {
     return null;
   }
 
+  const jobId = toNullableUuid(value.jobId);
+  if (jobId === undefined) {
+    return null;
+  }
+
   return {
     ...summary,
+    jobId,
     messages,
   };
 }

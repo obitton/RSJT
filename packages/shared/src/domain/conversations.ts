@@ -43,6 +43,9 @@ export const ConversationSummarySchema = z.object({
 });
 
 export const ConversationDetailSchema = ConversationSummarySchema.extend({
+  // The job this lead was converted into, if any. Present means the lead is
+  // already a job and should not offer conversion again.
+  jobId: z.string().uuid().nullable(),
   messages: z.array(ConversationMessageSchema),
 });
 

@@ -239,6 +239,7 @@ function makeDetail(
     lastInboundAt: updatedAt,
     lastInboundPreview: "Hello",
     updatedAt,
+    jobId: null,
     messages: [],
     ...overrides,
   };

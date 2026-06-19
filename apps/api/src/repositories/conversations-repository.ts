@@ -1,5 +1,5 @@
 import type { AppDb } from "@rsjt/db";
-import { conversations, messages } from "@rsjt/db";
+import { conversations, jobs, messages } from "@rsjt/db";
 import {
   type ConversationDetail,
   ConversationDetailSchema,
@@ -93,10 +93,17 @@ export class ConversationsRepository {
       .where(eq(messages.conversationId, conversationId))
       .orderBy(asc(messages.createdAt));
 
+    const [job] = await this.db
+      .select({ id: jobs.id })
+      .from(jobs)
+      .where(eq(jobs.conversationId, conversationId))
+      .limit(1);
+
     const previewMap = await this.lastInboundPreviews([conversationId]);
     const summary = toConversationSummary(row, previewMap);
     return ConversationDetailSchema.parse({
       ...summary,
+      jobId: job?.id ?? null,
       messages: messageRows.map(toConversationMessage),
     });
   }
