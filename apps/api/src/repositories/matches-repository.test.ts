@@ -1,5 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { type AppDb, createDb, createPool, jobs } from "@rsjt/db";
+import {
+  type AppDb,
+  conversations,
+  createDb,
+  createPool,
+  jobs,
+} from "@rsjt/db";
 import type { MatchCandidate } from "@rsjt/shared";
 import { eq, inArray } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
@@ -14,6 +20,7 @@ describe("MatchesRepository", () => {
   let db: AppDb;
   let repository: MatchesRepository;
   const createdJobIds: string[] = [];
+  const createdConversationIds: string[] = [];
 
   beforeAll(() => {
     pool = createPool(databaseUrl);
@@ -25,6 +32,12 @@ describe("MatchesRepository", () => {
     if (createdJobIds.length > 0) {
       await db.delete(jobs).where(inArray(jobs.id, createdJobIds));
       createdJobIds.length = 0;
+    }
+    if (createdConversationIds.length > 0) {
+      await db
+        .delete(conversations)
+        .where(inArray(conversations.id, createdConversationIds));
+      createdConversationIds.length = 0;
     }
   });
 
@@ -104,6 +117,28 @@ describe("MatchesRepository", () => {
     });
   });
 
+  it("mirrors the confirmed match onto the originating lead", async () => {
+    const conversationId = await createConversation({
+      externalPhone: "+15555550600",
+    });
+    const jobId = await createJob({ conversationId });
+    const match = candidate({
+      entityType: "customer",
+      repairShoprId: "404",
+      displayLabel: "Linked Customer",
+    });
+
+    await repository.replaceForJob(jobId, [match]);
+    await repository.selectForJob(jobId, match.id);
+
+    await expectConversationMatch(conversationId, {
+      matchedRepairShoprEntityType: "customer",
+      matchedRepairShoprId: "404",
+      matchedRepairShoprDisplayLabel: "Linked Customer",
+      matchedConfidenceBand: "medium_high",
+    });
+  });
+
   it("does not mutate the job when the selected candidate is unknown", async () => {
     const jobId = await createJob({
       customerLabel: "Existing Reference",
@@ -149,12 +184,45 @@ describe("MatchesRepository", () => {
       customerLabel?: string;
       repairShoprEntityType?: string;
       repairShoprId?: string;
+      conversationId?: string;
     } = {},
   ) {
     const id = randomUUID();
     createdJobIds.push(id);
     await db.insert(jobs).values({ id, ...values });
     return id;
+  }
+
+  async function createConversation(values: { externalPhone: string }) {
+    const id = randomUUID();
+    createdConversationIds.push(id);
+    await db.insert(conversations).values({ id, ...values });
+    return id;
+  }
+
+  async function expectConversationMatch(
+    conversationId: string,
+    expected: {
+      matchedRepairShoprEntityType: string | null;
+      matchedRepairShoprId: string | null;
+      matchedRepairShoprDisplayLabel: string | null;
+      matchedConfidenceBand: string | null;
+    },
+  ) {
+    const [conversation] = await db
+      .select({
+        matchedRepairShoprEntityType:
+          conversations.matchedRepairShoprEntityType,
+        matchedRepairShoprId: conversations.matchedRepairShoprId,
+        matchedRepairShoprDisplayLabel:
+          conversations.matchedRepairShoprDisplayLabel,
+        matchedConfidenceBand: conversations.matchedConfidenceBand,
+      })
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+
+    expect(conversation).toEqual(expected);
   }
 
   async function expectJobReference(

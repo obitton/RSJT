@@ -1,5 +1,5 @@
 import type { AppDb } from "@rsjt/db";
-import { jobs, matchCandidates } from "@rsjt/db";
+import { conversations, jobs, matchCandidates } from "@rsjt/db";
 import {
   type MatchCandidate,
   MatchConfidenceBandSchema,
@@ -92,6 +92,12 @@ export class MatchesRepository implements MatchCandidateStore {
 
       const now = new Date();
 
+      const [job] = await tx
+        .select({ conversationId: jobs.conversationId })
+        .from(jobs)
+        .where(eq(jobs.id, jobId))
+        .limit(1);
+
       await tx
         .update(matchCandidates)
         .set({ selectedAt: null })
@@ -116,6 +122,23 @@ export class MatchesRepository implements MatchCandidateStore {
           updatedAt: now,
         })
         .where(eq(jobs.id, jobId));
+
+      // Mirror the confirmed match onto the originating lead so its label
+      // auto-updates from the phone number to the customer name. Only the
+      // matched* fields are written, never customerName, so a name the customer
+      // stated in chat still takes precedence in leadLabel().
+      if (job?.conversationId) {
+        await tx
+          .update(conversations)
+          .set({
+            matchedRepairShoprEntityType: candidate.repairShoprEntityType,
+            matchedRepairShoprId: candidate.repairShoprId,
+            matchedRepairShoprDisplayLabel: candidate.repairShoprDisplayLabel,
+            matchedConfidenceBand: candidate.confidenceBand,
+            updatedAt: now,
+          })
+          .where(eq(conversations.id, job.conversationId));
+      }
 
       return toRepairShoprReference(candidate);
     });
