@@ -9,6 +9,6 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["e2e/**/*.test.ts"],
+    include: ["e2e/**/*.test.ts", "src/**/*.test.ts"],
   },
 });
