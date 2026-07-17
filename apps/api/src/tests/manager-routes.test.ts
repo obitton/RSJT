@@ -380,7 +380,7 @@ function dashboardResponse(): ManagerDashboardResponse {
       payoutReadyCount: 0,
     },
     groups: {
-      openJobs: [
+      jobs: [
         {
           id: jobId,
           state: "accepted",
@@ -391,10 +391,6 @@ function dashboardResponse(): ManagerDashboardResponse {
           pendingApprovalCount: 1,
           selectedMatchConfidenceBand: "high",
         },
-      ],
-      scheduledJobs: [],
-      completedJobs: [],
-      unmatchedJobs: [
         {
           id: "00000000-0000-4000-8000-000000010102",
           state: "unmatched",
@@ -405,7 +401,9 @@ function dashboardResponse(): ManagerDashboardResponse {
           pendingApprovalCount: 0,
         },
       ],
-      payoutReadyJobs: [],
+      payout: [],
+      completed: [],
+      canceled: [],
     },
     leads: [],
     takeoverConversations: [

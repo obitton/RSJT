@@ -42,6 +42,8 @@ const SCHEDULED_STATES = ["scheduled"] as const;
 const COMPLETED_STATES = ["completed"] as const;
 const UNMATCHED_STATES = ["unmatched"] as const;
 const PAYOUT_READY_STATES = ["payout_ready"] as const;
+const CLOSED_STATES = ["closed"] as const;
+const CANCELED_STATES = ["canceled"] as const;
 // Dedicated in-repair job state is introduced in REV01 slice 7; until then this
 // list is empty so the repair count reads 0 instead of a faked number.
 const REPAIR_STATES = [] as const;
@@ -59,6 +61,8 @@ export class ManagerDashboardRepository {
       unmatchedJobs,
       payoutReadyJobs,
       repairJobs,
+      closedJobs,
+      canceledJobs,
       takeoverConversations,
       leads,
     ] = await Promise.all([
@@ -68,11 +72,25 @@ export class ManagerDashboardRepository {
       this.listJobsForStates([...UNMATCHED_STATES]),
       this.listJobsForStates([...PAYOUT_READY_STATES]),
       this.listJobsForStates([...REPAIR_STATES]),
+      this.listJobsForStates([...CLOSED_STATES]),
+      this.listJobsForStates([...CANCELED_STATES]),
       this.listTakeoverConversations(),
       this.listLeads(),
     ]);
 
     const workingOnCount = leads.filter((lead) => lead.takeoverActive).length;
+
+    // Bottom-browser sections. The top summary cards keep their original
+    // counts; "jobs" here is every active job merged and re-sorted.
+    const activeJobs = sortByUpdatedAtDesc([
+      ...openJobs,
+      ...scheduledJobs,
+      ...unmatchedJobs,
+    ]);
+    const completedSection = sortByUpdatedAtDesc([
+      ...completedJobs,
+      ...closedJobs,
+    ]);
 
     return ManagerDashboardResponseSchema.parse({
       summary: {
@@ -89,11 +107,10 @@ export class ManagerDashboardRepository {
         payoutReadyCount: payoutReadyJobs.length,
       },
       groups: {
-        openJobs,
-        scheduledJobs,
-        completedJobs,
-        unmatchedJobs,
-        payoutReadyJobs,
+        jobs: activeJobs,
+        payout: payoutReadyJobs,
+        completed: completedSection,
+        canceled: canceledJobs,
       },
       leads,
       takeoverConversations,
@@ -357,6 +374,14 @@ export class ManagerDashboardRepository {
 }
 
 type ConversationRow = typeof conversations.$inferSelect;
+
+function sortByUpdatedAtDesc(
+  list: ManagerDashboardJob[],
+): ManagerDashboardJob[] {
+  return [...list].sort(
+    (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+  );
+}
 
 function leadLabel(row: ConversationRow): string {
   // Use the matched customer name when known, otherwise fall back to the phone

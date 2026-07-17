@@ -94,12 +94,14 @@ export const ManagerLeadDetailResponseSchema = z.object({
   lead: LeadDetailSchema,
 });
 
+// The bottom browser sections. "jobs" holds every active job (anything not yet
+// paid out, completed, or canceled). The "leads" section is the separate leads
+// array on the response.
 export const ManagerDashboardGroupsSchema = z.object({
-  openJobs: z.array(ManagerDashboardJobSchema),
-  scheduledJobs: z.array(ManagerDashboardJobSchema),
-  completedJobs: z.array(ManagerDashboardJobSchema),
-  unmatchedJobs: z.array(ManagerDashboardJobSchema),
-  payoutReadyJobs: z.array(ManagerDashboardJobSchema),
+  jobs: z.array(ManagerDashboardJobSchema),
+  payout: z.array(ManagerDashboardJobSchema),
+  completed: z.array(ManagerDashboardJobSchema),
+  canceled: z.array(ManagerDashboardJobSchema),
 });
 
 export const ManagerDashboardResponseSchema = z.object({

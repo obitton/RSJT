@@ -30,6 +30,7 @@ const JOB_STATES = [
   "completed",
   "payout_ready",
   "closed",
+  "canceled",
 ] as const satisfies readonly JobState[];
 
 const JOB_ORIGINS = ["lead", "manual"] as const satisfies readonly JobOrigin[];
@@ -198,28 +199,20 @@ function toGroups(value: unknown): ManagerDashboardGroups | null {
     return null;
   }
 
-  const openJobs = toDashboardJobArray(value.openJobs);
-  const scheduledJobs = toDashboardJobArray(value.scheduledJobs);
-  const completedJobs = toDashboardJobArray(value.completedJobs);
-  const unmatchedJobs = toDashboardJobArray(value.unmatchedJobs);
-  const payoutReadyJobs = toDashboardJobArray(value.payoutReadyJobs);
+  const jobs = toDashboardJobArray(value.jobs);
+  const payout = toDashboardJobArray(value.payout);
+  const completed = toDashboardJobArray(value.completed);
+  const canceled = toDashboardJobArray(value.canceled);
 
-  if (
-    !openJobs ||
-    !scheduledJobs ||
-    !completedJobs ||
-    !unmatchedJobs ||
-    !payoutReadyJobs
-  ) {
+  if (!jobs || !payout || !completed || !canceled) {
     return null;
   }
 
   return {
-    openJobs,
-    scheduledJobs,
-    completedJobs,
-    unmatchedJobs,
-    payoutReadyJobs,
+    jobs,
+    payout,
+    completed,
+    canceled,
   };
 }
 

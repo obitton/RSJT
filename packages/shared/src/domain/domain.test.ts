@@ -161,7 +161,7 @@ describe("domain contracts", () => {
         payoutReadyCount: 0,
       },
       groups: {
-        openJobs: [
+        jobs: [
           {
             id: jobId,
             state: "accepted",
@@ -172,10 +172,6 @@ describe("domain contracts", () => {
             pendingApprovalCount: 1,
             selectedMatchConfidenceBand: "high",
           },
-        ],
-        scheduledJobs: [],
-        completedJobs: [],
-        unmatchedJobs: [
           {
             id: "00000000-0000-4000-8000-000000010103",
             state: "unmatched",
@@ -186,7 +182,18 @@ describe("domain contracts", () => {
             pendingApprovalCount: 0,
           },
         ],
-        payoutReadyJobs: [],
+        payout: [],
+        completed: [],
+        canceled: [
+          {
+            id: "00000000-0000-4000-8000-000000010104",
+            state: "canceled",
+            origin: "manual",
+            customerLabel: "Canceled job",
+            updatedAt,
+            pendingApprovalCount: 0,
+          },
+        ],
       },
       leads: [],
       takeoverConversations: [
@@ -201,10 +208,9 @@ describe("domain contracts", () => {
     });
 
     expect(response.summary.openCount).toBe(1);
-    expect(response.groups.openJobs[0]?.state).toBe("accepted");
-    expect(response.groups.openJobs[0]?.selectedMatchConfidenceBand).toBe(
-      "high",
-    );
+    expect(response.groups.jobs[0]?.state).toBe("accepted");
+    expect(response.groups.jobs[0]?.selectedMatchConfidenceBand).toBe("high");
+    expect(response.groups.canceled[0]?.state).toBe("canceled");
     expect(response.takeoverConversations[0]?.externalPhone).toBe(
       "+15555550100",
     );

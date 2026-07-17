@@ -152,11 +152,8 @@ function responseFor(pathname: string, method: string) {
         payoutReadyCount: 1,
       },
       groups: {
-        openJobs: [],
-        scheduledJobs: [],
-        completedJobs: [],
-        unmatchedJobs: [],
-        payoutReadyJobs: [
+        jobs: [],
+        payout: [
           {
             id: jobId,
             state: "payout_ready",
@@ -166,6 +163,8 @@ function responseFor(pathname: string, method: string) {
             pendingApprovalCount: 0,
           },
         ],
+        completed: [],
+        canceled: [],
       },
       leads: [],
       takeoverConversations: [],

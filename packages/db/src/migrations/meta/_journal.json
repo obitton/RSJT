@@ -71,6 +71,13 @@
       "when": 1780007400000,
       "tag": "0009_job_origin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780007500000,
+      "tag": "0010_job_canceled_state",
+      "breakpoints": true
     }
   ]
 }

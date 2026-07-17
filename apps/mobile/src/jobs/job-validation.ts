@@ -22,6 +22,7 @@ const JOB_STATES = [
   "completed",
   "payout_ready",
   "closed",
+  "canceled",
 ] as const satisfies readonly JobState[];
 
 const SPLIT_CATEGORIES = [
