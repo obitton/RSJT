@@ -1,5 +1,6 @@
 import { isRecord } from "@/auth/session-validation";
 import type {
+  CancelJobResponse,
   ExtractedFact,
   JobState,
   JobSummary,
@@ -135,6 +136,19 @@ function toJobSummaryArray(value: unknown): JobSummary[] | null {
   return jobs.every((job) => job !== null) ? jobs : null;
 }
 
+export function toCancelJobResponse(value: unknown): CancelJobResponse | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const job = toJobSummary(value.job);
+  if (!job) {
+    return null;
+  }
+
+  return { job };
+}
+
 export function toJobSummary(value: unknown): JobSummary | null {
   if (
     !isRecord(value) ||
@@ -152,13 +166,15 @@ export function toJobSummary(value: unknown): JobSummary | null {
     value.repairShoprReference === undefined
       ? undefined
       : toRepairShoprReference(value.repairShoprReference);
+  const canceledAt = toOptionalDate(value.canceledAt);
 
   if (
     splitCategory === null ||
     grossChargeCents === null ||
     reportedProfitCents === null ||
     profitBasis === null ||
-    repairShoprReference === null
+    repairShoprReference === null ||
+    canceledAt === null
   ) {
     return null;
   }
@@ -174,6 +190,10 @@ export function toJobSummary(value: unknown): JobSummary | null {
     ...(reportedProfitCents !== undefined ? { reportedProfitCents } : {}),
     ...(profitBasis ? { profitBasis } : {}),
     ...(repairShoprReference ? { repairShoprReference } : {}),
+    ...(typeof value.cancelReason === "string" && value.cancelReason.length > 0
+      ? { cancelReason: value.cancelReason }
+      : {}),
+    ...(canceledAt !== undefined ? { canceledAt } : {}),
   };
 }
 
@@ -445,6 +465,20 @@ function toRequiredCents(value: unknown): number | null {
   }
 
   return value;
+}
+
+function toOptionalDate(value: unknown): Date | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
 }
 
 function toOptionalSplitCategory(

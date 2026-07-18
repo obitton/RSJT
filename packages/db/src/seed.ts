@@ -72,6 +72,19 @@ await db
       customerLabel: "Unmatched walk-in update",
       updatedAt: new Date("2026-05-22T14:00:00.000Z"),
     },
+    {
+      // A canceled job so the Canceled dashboard section has something to show,
+      // along with the reason it was canceled.
+      id: "00000000-0000-4000-8000-000000010104",
+      origin: "manual",
+      originNote: "Walk-in that changed their mind before any work started.",
+      state: "canceled",
+      customerLabel: "Canceled tune-up",
+      cancelReason:
+        "Customer decided to replace the device instead of repairing it.",
+      canceledAt: new Date("2026-05-23T14:00:00.000Z"),
+      updatedAt: new Date("2026-05-23T14:00:00.000Z"),
+    },
   ])
   // Refresh origin/originNote on re-seed so existing demo jobs pick up the tags.
   .onConflictDoUpdate({

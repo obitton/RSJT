@@ -78,6 +78,13 @@
       "when": 1780007500000,
       "tag": "0010_job_canceled_state",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1780007600000,
+      "tag": "0011_job_cancellation",
+      "breakpoints": true
     }
   ]
 }

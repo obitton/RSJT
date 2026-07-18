@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ApprovalFilterQuerySchema,
+  CancelJobRequestSchema,
   ContactCardDataSchema,
   ContactCardPreviewResponseSchema,
   ContactCardVcardResponseSchema,
@@ -29,6 +30,7 @@ import {
   WritebackExecutionListResponseSchema,
   WritebackExecutionResponseSchema,
   extractTwilioMediaItems,
+  isCancelableJobState,
 } from "../index.js";
 
 describe("domain contracts", () => {
@@ -214,6 +216,47 @@ describe("domain contracts", () => {
     expect(response.takeoverConversations[0]?.externalPhone).toBe(
       "+15555550100",
     );
+  });
+
+  it("allows cancelling only active job states", () => {
+    expect(isCancelableJobState("unmatched")).toBe(true);
+    expect(isCancelableJobState("intake")).toBe(true);
+    expect(isCancelableJobState("accepted")).toBe(true);
+    expect(isCancelableJobState("scheduled")).toBe(true);
+    expect(isCancelableJobState("completed")).toBe(false);
+    expect(isCancelableJobState("payout_ready")).toBe(false);
+    expect(isCancelableJobState("closed")).toBe(false);
+    expect(isCancelableJobState("canceled")).toBe(false);
+  });
+
+  it("requires a non-empty reason to cancel a job", () => {
+    expect(
+      CancelJobRequestSchema.parse({ reason: "  Wrong address  " }),
+    ).toEqual({ reason: "Wrong address" });
+    expect(CancelJobRequestSchema.safeParse({ reason: "   " }).success).toBe(
+      false,
+    );
+    expect(CancelJobRequestSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("carries the cancel reason and time on a canceled job", () => {
+    const updatedAt = new Date("2026-05-23T12:00:00.000Z");
+    const response = ManagerJobDetailResponseSchema.parse({
+      job: {
+        id: "00000000-0000-4000-8000-000000010104",
+        state: "canceled",
+        origin: "manual",
+        customerLabel: "Canceled tune-up",
+        updatedAt,
+        pendingApprovalCount: 0,
+        cancelReason: "Customer replaced the device",
+        canceledAt: updatedAt,
+      },
+      pendingApprovals: [],
+    });
+
+    expect(response.job.cancelReason).toBe("Customer replaced the device");
+    expect(response.job.canceledAt).toEqual(updatedAt);
   });
 
   it("parses a manager job detail response with optional selected match", () => {

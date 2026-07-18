@@ -19,6 +19,7 @@ import {
   toManagerLeadDetailResponse,
 } from "@/dashboard/dashboard-validation";
 import {
+  toCancelJobResponse,
   toJobUpdateFeedResponse,
   toUpdateExtractionResponse,
 } from "@/jobs/job-validation";
@@ -38,6 +39,7 @@ import {
   toWritebackExecutionResponse,
 } from "@/writebacks/writeback-validation";
 import type {
+  CancelJobResponse,
   ContactCardPreviewResponse,
   ContactCardVcardResponse,
   ConversationDetailResponse,
@@ -115,6 +117,11 @@ export type ApiClient = {
     jobId: string,
     input: UpdateExtractionRequest,
   ) => Promise<UpdateExtractionResponse>;
+  cancelJob: (
+    token: string,
+    jobId: string,
+    reason: string,
+  ) => Promise<CancelJobResponse>;
   getManagerDashboard: (token: string) => Promise<ManagerDashboardResponse>;
   getManagerJobDetail: (
     token: string,
@@ -291,6 +298,15 @@ export function createApiClient(
         token,
         body: input,
         parse: parseUpdateExtractionResponse,
+      }),
+    cancelJob: async (token, jobId, reason) =>
+      requestJson({
+        apiBaseUrl,
+        path: `/jobs/${encodeURIComponent(jobId)}/cancel`,
+        method: "POST",
+        token,
+        body: { reason },
+        parse: parseCancelJobResponse,
       }),
     getManagerDashboard: async (token) =>
       requestJson({
@@ -668,6 +684,15 @@ function parseResolveReminderResponse(payload: unknown) {
   const result = toResolveReminderResponse(payload);
   if (!result) {
     throw new ApiError(0, "Unexpected resolve reminder response", payload);
+  }
+
+  return result;
+}
+
+function parseCancelJobResponse(payload: unknown) {
+  const result = toCancelJobResponse(payload);
+  if (!result) {
+    throw new ApiError(0, "Unexpected cancel job response", payload);
   }
 
   return result;
