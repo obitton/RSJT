@@ -177,6 +177,13 @@ export const jobs = pgTable(
     calculatedProfitCents: integer("calculated_profit_cents"),
     profitBasis: profitBasis("profit_basis"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    // Set when a job is canceled: why, when, and who canceled it. All null for
+    // jobs that are still active or reached a natural terminal state.
+    cancelReason: text("cancel_reason"),
+    canceledAt: timestamp("canceled_at", { withTimezone: true }),
+    canceledByUserId: uuid("canceled_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

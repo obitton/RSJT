@@ -18,6 +18,22 @@ export const JobStateSchema = z.enum([
   "canceled",
 ]);
 
+// A job can be canceled only while it is still active work. Once it has been
+// completed, made payout-ready, closed, or already canceled, cancelling no
+// longer makes sense and is rejected.
+export const CANCELABLE_JOB_STATES = [
+  "unmatched",
+  "intake",
+  "accepted",
+  "scheduled",
+] as const;
+
+export function isCancelableJobState(
+  state: z.infer<typeof JobStateSchema>,
+): boolean {
+  return (CANCELABLE_JOB_STATES as readonly string[]).includes(state);
+}
+
 // Whether a job was converted from a lead conversation or created directly
 // (walk-in, phone-in, import).
 export const JobOriginSchema = z.enum(["lead", "manual"]);
@@ -58,6 +74,19 @@ export const JobSummarySchema = z.object({
   reportedProfitCents: MoneyCentsSchema.optional(),
   profitBasis: ProfitBasisSchema.optional(),
   repairShoprReference: RepairShoprReferenceSchema.optional(),
+  // Present only on a canceled job: the reason a tech or manager gave, and when
+  // it was canceled.
+  cancelReason: z.string().min(1).optional(),
+  canceledAt: z.date().optional(),
+});
+
+// Cancelling a job requires a short reason. Both techs and managers can cancel.
+export const CancelJobRequestSchema = z.object({
+  reason: z.string().trim().min(1).max(500),
+});
+
+export const CancelJobResponseSchema = z.object({
+  job: JobSummarySchema,
 });
 
 export const JobUpdateFeedResponseSchema = z.object({
@@ -67,6 +96,8 @@ export const JobUpdateFeedResponseSchema = z.object({
 
 export type JobState = z.infer<typeof JobStateSchema>;
 export type JobOrigin = z.infer<typeof JobOriginSchema>;
+export type CancelJobRequest = z.infer<typeof CancelJobRequestSchema>;
+export type CancelJobResponse = z.infer<typeof CancelJobResponseSchema>;
 export type ExtractedFactType = z.infer<typeof ExtractedFactTypeSchema>;
 export type SourceEvidence = z.infer<typeof SourceEvidenceSchema>;
 export type MatchCandidate = z.infer<typeof MatchCandidateSchema>;

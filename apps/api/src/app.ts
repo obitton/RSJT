@@ -16,6 +16,7 @@ import { ApprovalsRepository } from "./repositories/approvals-repository.js";
 import { ConversationsRepository } from "./repositories/conversations-repository.js";
 import { ExtractedFactsRepository } from "./repositories/extracted-facts-repository.js";
 import { IntakeRepository } from "./repositories/intake-repository.js";
+import { JobCancellationRepository } from "./repositories/job-cancellation-repository.js";
 import { JobMoneyRepository } from "./repositories/job-money-repository.js";
 import { JobsRepository } from "./repositories/jobs-repository.js";
 import { LeadConversionRepository } from "./repositories/lead-conversion-repository.js";
@@ -53,6 +54,10 @@ import {
   type CustomerIntakeStateMachineServiceApi,
 } from "./services/customer-intake-state-machine-service.js";
 import { IntakeSpamGate } from "./services/intake-spam-gate.js";
+import {
+  JobCancellationService,
+  type JobCancellationServiceApi,
+} from "./services/job-cancellation-service.js";
 import {
   JobMoneyService,
   type JobMoneyServiceApi,
@@ -107,6 +112,7 @@ type AppOptions = {
   contactCardService?: ContactCardServiceApi;
   customerIntakeService?: CustomerIntakeStateMachineServiceApi;
   intakeBotUserId?: string;
+  jobCancellationService?: JobCancellationServiceApi;
   jobMoneyService?: JobMoneyServiceApi;
   jobUpdateFeedService?: JobUpdateFeedServiceApi;
   leadConversionService?: LeadConversionServiceApi;
@@ -209,6 +215,7 @@ export async function buildApp(config: ApiConfig, options: AppOptions = {}) {
   await registerJobsRoutes(
     app,
     options.jobUpdateFeedService ?? createDefaultJobUpdateFeedService(app),
+    options.jobCancellationService ?? createDefaultJobCancellationService(app),
   );
   await registerUpdateRoutes(
     app,
@@ -253,6 +260,14 @@ function createDefaultJobUpdateFeedService(app: FastifyInstance) {
   }
 
   return new JobUpdateFeedService(new JobsRepository(app.db));
+}
+
+function createDefaultJobCancellationService(app: FastifyInstance) {
+  if (!app.hasDecorator("db")) {
+    return undefined;
+  }
+
+  return new JobCancellationService(new JobCancellationRepository(app.db));
 }
 
 function createDefaultContactCardService(app: FastifyInstance) {

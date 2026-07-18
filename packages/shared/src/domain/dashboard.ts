@@ -48,6 +48,9 @@ export const ManagerDashboardJobSchema = z.object({
   profitBasis: ProfitBasisSchema.optional(),
   pendingApprovalCount: z.number().int().min(0),
   selectedMatchConfidenceBand: MatchConfidenceBandSchema.optional(),
+  // Present only on a canceled job: why it was canceled and when.
+  cancelReason: z.string().min(1).optional(),
+  canceledAt: z.date().optional(),
 });
 
 export const TakeoverConversationSummarySchema = z.object({

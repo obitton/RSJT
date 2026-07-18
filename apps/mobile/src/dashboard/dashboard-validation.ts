@@ -298,6 +298,16 @@ function toDashboardJob(value: unknown): ManagerDashboardJob | null {
     return null;
   }
 
+  const cancelReason = toOptionalNonEmptyString(value.cancelReason);
+  if (cancelReason === null) {
+    return null;
+  }
+
+  const canceledAt = toOptionalDate(value.canceledAt);
+  if (canceledAt === null) {
+    return null;
+  }
+
   return {
     id: value.id,
     state: value.state,
@@ -314,6 +324,8 @@ function toDashboardJob(value: unknown): ManagerDashboardJob | null {
     ...(calculatedProfitCents !== undefined ? { calculatedProfitCents } : {}),
     ...(profitBasis ? { profitBasis } : {}),
     ...(selectedMatchConfidenceBand ? { selectedMatchConfidenceBand } : {}),
+    ...(cancelReason ? { cancelReason } : {}),
+    ...(canceledAt !== undefined ? { canceledAt } : {}),
   };
 }
 
@@ -584,6 +596,13 @@ function toNullableDate(value: unknown): Date | null | undefined {
     return null;
   }
   return toDate(value) ?? undefined;
+}
+
+function toOptionalDate(value: unknown): Date | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return toDate(value);
 }
 
 function toOptionalNonEmptyString(value: unknown): string | null | undefined {

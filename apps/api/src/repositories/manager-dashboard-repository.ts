@@ -459,5 +459,7 @@ function toManagerDashboardJob(
       ? { calculatedProfitCents: row.calculatedProfitCents }
       : {}),
     ...(row.profitBasis ? { profitBasis: row.profitBasis } : {}),
+    ...(row.cancelReason ? { cancelReason: row.cancelReason } : {}),
+    ...(row.canceledAt ? { canceledAt: row.canceledAt } : {}),
   });
 }

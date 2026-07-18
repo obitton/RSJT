@@ -25,6 +25,7 @@ export default function TechConversationDetailScreen() {
   const token = session?.token;
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
 
   const detailQuery = useQuery({
     enabled: Boolean(token && conversationId),
@@ -67,6 +68,18 @@ export default function TechConversationDetailScreen() {
     mutationFn: () =>
       apiClient.convertLeadToJob(requireToken(token), conversationId),
     onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["tech-conversations", token],
+      });
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (vars: { jobId: string; reason: string }) =>
+      apiClient.cancelJob(requireToken(token), vars.jobId, vars.reason),
+    onSuccess: () => {
+      setCancelReason("");
+      void detailQuery.refetch();
       void queryClient.invalidateQueries({
         queryKey: ["tech-conversations", token],
       });
@@ -125,6 +138,19 @@ export default function TechConversationDetailScreen() {
             convertError={convertMutation.error}
             onConvert={() => convertMutation.mutate()}
           />
+          {detailQuery.data.conversation.jobId ? (
+            <CancelJobPanel
+              jobId={detailQuery.data.conversation.jobId}
+              isCanceling={cancelMutation.isPending}
+              canceledState={cancelMutation.data?.job.state ?? null}
+              cancelError={cancelMutation.error}
+              reason={cancelReason}
+              onChangeReason={setCancelReason}
+              onCancel={(jobId) =>
+                cancelMutation.mutate({ jobId, reason: cancelReason.trim() })
+              }
+            />
+          ) : null}
         </>
       ) : null}
     </Screen>
@@ -300,6 +326,72 @@ function ConvertToJobPanel({
         label="Convert to job"
         loading={isConverting}
         onPress={onConvert}
+      />
+    </Panel>
+  );
+}
+
+function CancelJobPanel({
+  jobId,
+  isCanceling,
+  canceledState,
+  cancelError,
+  reason,
+  onChangeReason,
+  onCancel,
+}: {
+  jobId: string;
+  isCanceling: boolean;
+  canceledState: string | null;
+  cancelError: unknown;
+  reason: string;
+  onChangeReason: (value: string) => void;
+  onCancel: (jobId: string) => void;
+}) {
+  // Once canceled this session, replace the form with a confirmation note.
+  if (canceledState === "canceled") {
+    return (
+      <Panel>
+        <Text selectable style={styles.panelTitle}>
+          Job canceled
+        </Text>
+        <Text selectable style={styles.body}>
+          This job has been canceled.
+        </Text>
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel>
+      <Text selectable style={styles.panelTitle}>
+        Cancel job
+      </Text>
+      <Text selectable style={styles.body}>
+        Cancel this job and add a short reason so the team knows why. Only
+        active jobs can be canceled.
+      </Text>
+      <TextInput
+        editable={!isCanceling}
+        multiline
+        onChangeText={onChangeReason}
+        placeholder="Reason for canceling"
+        placeholderTextColor="#6B7280"
+        style={styles.composer}
+        textAlignVertical="top"
+        value={reason}
+      />
+      {cancelError ? (
+        <Text selectable style={styles.errorText}>
+          {getErrorMessage(cancelError)}
+        </Text>
+      ) : null}
+      <ActionButton
+        disabled={isCanceling || reason.trim().length === 0}
+        label="Cancel job"
+        loading={isCanceling}
+        onPress={() => onCancel(jobId)}
+        variant="secondary"
       />
     </Panel>
   );

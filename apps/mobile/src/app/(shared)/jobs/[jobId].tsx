@@ -11,10 +11,21 @@ import {
   formatJobStateLabel,
   formatPendingApprovalLabel,
 } from "@/dashboard/dashboard-format";
-import type { ManagerJobDetailResponse } from "@rsjt/shared";
-import { useQuery } from "@tanstack/react-query";
+import { isCancelableJobState } from "@rsjt/shared";
+import type {
+  ManagerDashboardJob,
+  ManagerJobDetailResponse,
+} from "@rsjt/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 export default function JobDetailScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
@@ -22,10 +33,25 @@ export default function JobDetailScreen() {
   const role = session?.user.role;
   const token = session?.token;
 
+  const queryClient = useQueryClient();
+  const [cancelReason, setCancelReason] = useState("");
+
   const detailQuery = useQuery({
     enabled: Boolean(token && jobId && role === "manager"),
     queryKey: ["manager-job-detail", jobId, token],
     queryFn: () => apiClient.getManagerJobDetail(requireToken(token), jobId),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (vars: { jobId: string; reason: string }) =>
+      apiClient.cancelJob(requireToken(token), vars.jobId, vars.reason),
+    onSuccess: () => {
+      setCancelReason("");
+      void detailQuery.refetch();
+      void queryClient.invalidateQueries({
+        queryKey: ["manager-dashboard", token],
+      });
+    },
   });
 
   if (!jobId) {
@@ -71,9 +97,101 @@ export default function JobDetailScreen() {
           />
         </View>
       ) : detailQuery.data ? (
-        <JobDetailBody detail={detailQuery.data} />
+        <>
+          <JobDetailBody detail={detailQuery.data} />
+          <JobCancelSection
+            job={detailQuery.data.job}
+            isCanceling={cancelMutation.isPending}
+            cancelError={cancelMutation.error}
+            reason={cancelReason}
+            onChangeReason={setCancelReason}
+            onCancel={(canceledJobId) =>
+              cancelMutation.mutate({
+                jobId: canceledJobId,
+                reason: cancelReason.trim(),
+              })
+            }
+          />
+        </>
       ) : null}
     </Screen>
+  );
+}
+
+function JobCancelSection({
+  job,
+  isCanceling,
+  cancelError,
+  reason,
+  onChangeReason,
+  onCancel,
+}: {
+  job: ManagerDashboardJob;
+  isCanceling: boolean;
+  cancelError: unknown;
+  reason: string;
+  onChangeReason: (value: string) => void;
+  onCancel: (jobId: string) => void;
+}) {
+  if (job.state === "canceled") {
+    return (
+      <View style={styles.panel}>
+        <Text selectable style={styles.label}>
+          Canceled
+        </Text>
+        <Text selectable style={styles.body}>
+          {job.cancelReason
+            ? `Reason: ${job.cancelReason}`
+            : "This job has been canceled."}
+        </Text>
+      </View>
+    );
+  }
+
+  if (!isCancelableJobState(job.state)) {
+    return (
+      <View style={styles.panel}>
+        <Text selectable style={styles.label}>
+          Cancel job
+        </Text>
+        <Text selectable style={styles.body}>
+          This job can no longer be canceled.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.panel}>
+      <Text selectable style={styles.label}>
+        Cancel job
+      </Text>
+      <Text selectable style={styles.body}>
+        Cancel this job and add a short reason so the team knows why.
+      </Text>
+      <TextInput
+        editable={!isCanceling}
+        multiline
+        onChangeText={onChangeReason}
+        placeholder="Reason for canceling"
+        placeholderTextColor="#6B7280"
+        style={styles.composer}
+        textAlignVertical="top"
+        value={reason}
+      />
+      {cancelError ? (
+        <Text selectable style={styles.errorText}>
+          {getErrorMessage(cancelError)}
+        </Text>
+      ) : null}
+      <ActionButton
+        disabled={isCanceling || reason.trim().length === 0}
+        label="Cancel job"
+        loading={isCanceling}
+        onPress={() => onCancel(job.id)}
+        variant="secondary"
+      />
+    </View>
   );
 }
 
@@ -275,4 +393,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
+  composer: {
+    minHeight: 96,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 8,
+    padding: 12,
+    color: "#111827",
+    backgroundColor: "#F8FAFC",
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  errorText: { color: "#B42318", fontSize: 14, lineHeight: 20 },
 });
