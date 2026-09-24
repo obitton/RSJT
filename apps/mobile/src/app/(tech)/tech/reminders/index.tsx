@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/client";
+import { getErrorMessage, requireToken } from "@/api/request-helpers";
 import { useAuth } from "@/auth/auth-context";
 import { ActionButton } from "@/components/action-button";
 import { Screen } from "@/components/screen";
@@ -169,17 +170,6 @@ function Panel({ children }: { children: ReactNode }) {
   return <View style={styles.panel}>{children}</View>;
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Request failed";
-}
-
-function requireToken(token: string | undefined) {
-  if (!token) {
-    throw new Error("Session required");
-  }
-  return token;
-}
-
 const styles = StyleSheet.create({
   screen: {
     gap: 14,
@@ -236,7 +226,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   errorText: {
-    color: "#B91C1C",
+    color: "#B42318",
     fontSize: 14,
     lineHeight: 20,
   },

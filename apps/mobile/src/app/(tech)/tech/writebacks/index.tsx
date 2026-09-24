@@ -1,6 +1,8 @@
 import { apiClient } from "@/api/client";
+import { getErrorMessage, requireToken } from "@/api/request-helpers";
 import { useAuth } from "@/auth/auth-context";
 import { ActionButton } from "@/components/action-button";
+import { Panel } from "@/components/panel";
 import { Screen } from "@/components/screen";
 import {
   formatAttemptSummary,
@@ -141,21 +143,6 @@ function WritebackRow({ execution }: { execution: WritebackExecution }) {
   );
 }
 
-function Panel({ children }: { children: React.ReactNode }) {
-  return <View style={styles.panel}>{children}</View>;
-}
-
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Request failed";
-}
-
-function requireToken(token: string | undefined) {
-  if (!token) {
-    throw new Error("Session required");
-  }
-  return token;
-}
-
 const styles = StyleSheet.create({
   screen: { gap: 14 },
   header: {
@@ -168,14 +155,6 @@ const styles = StyleSheet.create({
   },
   title: { color: "#111827", fontSize: 22, fontWeight: "700" },
   body: { color: "#4B5563", fontSize: 14, lineHeight: 20 },
-  panel: {
-    gap: 12,
-    borderWidth: 1,
-    borderColor: "#D7DEE8",
-    borderRadius: 8,
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-  },
   panelTitle: { color: "#111827", fontSize: 16, fontWeight: "700" },
   list: { gap: 8 },
   rowLink: { textDecorationLine: "none" },

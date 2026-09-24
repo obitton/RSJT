@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/client";
+import { getErrorMessage, requireToken } from "@/api/request-helpers";
 import { useAuth } from "@/auth/auth-context";
 import { ActionButton } from "@/components/action-button";
 import { Screen } from "@/components/screen";
@@ -10,8 +11,13 @@ import {
   formatProfitBasis,
   formatSplitCategory,
 } from "@/money/money-format";
-import type { JobMoneyResponse, SplitCategory } from "@rsjt/shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useJobMoney } from "@/money/use-job-money";
+import {
+  type JobMoneyResponse,
+  type SplitCategory,
+  SplitCategorySchema,
+} from "@rsjt/shared";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -24,11 +30,7 @@ import {
   View,
 } from "react-native";
 
-const SPLIT_CATEGORIES = [
-  "returning_repairshopr_customer",
-  "new_lead",
-  "customer_service_heavy",
-] as const satisfies readonly SplitCategory[];
+const SPLIT_CATEGORIES = SplitCategorySchema.options;
 
 export default function ManagerMoneyScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
@@ -40,11 +42,7 @@ export default function ManagerMoneyScreen() {
   const [reason, setReason] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const moneyQuery = useQuery({
-    enabled: Boolean(token && jobId),
-    queryKey: ["job-money", jobId, token],
-    queryFn: () => apiClient.getJobMoney(requireToken(token), jobId),
-  });
+  const moneyQuery = useJobMoney(token, jobId);
 
   const hydrateForm = useCallback((response: JobMoneyResponse) => {
     setLoadedJobId(response.summary.jobId);
@@ -337,17 +335,6 @@ function Panel({ children }: { children: ReactNode }) {
   return <View style={styles.panel}>{children}</View>;
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Request failed";
-}
-
-function requireToken(token: string | undefined) {
-  if (!token) {
-    throw new Error("Session required");
-  }
-  return token;
-}
-
 const styles = StyleSheet.create({
   screen: {
     gap: 14,
@@ -449,7 +436,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   errorText: {
-    color: "#B91C1C",
+    color: "#B42318",
     fontSize: 14,
     fontWeight: "700",
   },
