@@ -17,8 +17,8 @@ Personal RepairShopr-backed service referral ops agent.
 - `AI_PROVIDER_API_KEY`: model provider key for update extraction.
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_MESSAGING_SERVICE_SID`, and `TWILIO_FROM_PHONE_NUMBER`: Twilio messaging config.
 - `MESSAGING_CHANNEL=whatsapp_sandbox` uses Twilio's WhatsApp Sandbox for local message-loop testing.
-- `MESSAGING_OUTBOUND_ENABLED=false` keeps outbound messaging disabled until we deliberately turn it on.
-- `MESSAGING_TEST_RECIPIENT_ALLOWLIST` should contain only test recipient numbers when outbound testing starts.
+- `MESSAGING_OUTBOUND_ENABLED=false` keeps outbound messaging disabled until we deliberately turn it on. Boolean flags accept only true, false, 1, or 0.
+- `MESSAGING_TEST_RECIPIENT_ALLOWLIST` is the comma-separated list of recipients allowed while outbound is enabled: an empty value blocks all sends, and `*` allows all.
 
 For WhatsApp Sandbox testing, open Twilio Console, go to Messaging, Try WhatsApp, then send the shown `join ...` code from your WhatsApp account to Twilio's sandbox number. The default sandbox sender is `whatsapp:+14155238886`.
 

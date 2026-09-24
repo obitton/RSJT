@@ -1,22 +1,8 @@
+import { formatJobStateLabel } from "@/dashboard/dashboard-format";
 import type { ExtractedFact, JobState, MissingField } from "@rsjt/shared";
 
 export function formatJobState(state: JobState) {
-  switch (state) {
-    case "unmatched":
-      return "Unmatched";
-    case "intake":
-      return "Intake";
-    case "accepted":
-      return "Accepted";
-    case "scheduled":
-      return "Scheduled";
-    case "completed":
-      return "Completed";
-    case "payout_ready":
-      return "Payout ready";
-    case "closed":
-      return "Closed";
-  }
+  return formatJobStateLabel(state);
 }
 
 export function formatFactLabel(type: ExtractedFact["type"]) {
