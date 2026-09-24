@@ -17,8 +17,8 @@ This is a personal project owned by Ofir. It is not a Tenex client project and m
 
 ## Allowed Working Area
 
-- Project files should live under `/Users/ofirbitton/dev/RSJT`.
-- Temporary scratch files may live under `/private/tmp` when needed.
+- Project files live in this repository's root, wherever it is checked out (for example C:\dev\RSJT on Windows or /Users/ofirbitton/dev/RSJT on macOS).
+- Temporary scratch files may live in the OS temp directory when needed.
 - Planning artifacts are markdown files in `.project-management/` (see below). They are not committed to this public repo.
 
 ## Local Development Flow
