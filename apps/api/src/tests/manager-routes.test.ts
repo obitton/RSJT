@@ -7,10 +7,10 @@ import type {
 } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
 import type { AuthSessionService } from "../services/auth-service.js";
 import type { CustomerIntakeStateMachineServiceApi } from "../services/customer-intake-state-machine-service.js";
 import type { ManagerDashboardServiceApi } from "../services/manager-dashboard-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const managerUser: SessionUser = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -490,18 +490,5 @@ function authHeader(role: "manager" | "tech") {
       role === "manager"
         ? "Bearer session-token-manager"
         : "Bearer session-token-tech",
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }

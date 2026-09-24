@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
 import {
   type MessagingWebhookRequestContext,
   type MessagingWebhookServiceApi,
   TwilioWebhookSignatureError,
 } from "../services/messaging-webhook-service.js";
+import { createFakeAuthService } from "./support/fake-auth-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const inboundPayload =
   "MessageSid=SMtest123&From=%2B15555550100&To=%2B15555550199&Body=Hello&NumMedia=0";
@@ -131,7 +132,7 @@ describe("twilio webhook routes", () => {
 
   it("returns 503 when the messaging webhook service is unavailable", async () => {
     const app = await buildApp(testConfig(), {
-      authService: stubAuthService(),
+      authService: createFakeAuthService({}),
     });
 
     const response = await app.inject({
@@ -188,29 +189,4 @@ class TestMessagingWebhookService implements MessagingWebhookServiceApi {
     this.statusCalls.push({ context, payload });
     return { updatedMessageId: null };
   }
-}
-
-function stubAuthService() {
-  return {
-    async login() {
-      throw new Error("not used");
-    },
-    async getSession() {
-      return null;
-    },
-    async logout() {},
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
-  };
 }

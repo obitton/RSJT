@@ -1,20 +1,13 @@
 import type { AppDb } from "@rsjt/db";
 import { conversations, jobs, messages, schedulingProposals } from "@rsjt/db";
-import {
-  type JobState,
-  type JobSummary,
-  JobSummarySchema,
-  type RepairShoprReference,
-  RepairShoprReferenceSchema,
-} from "@rsjt/shared";
+import type { JobSummary } from "@rsjt/shared";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import type {
   ConversionConversation,
   CreateJobFromConversationInput,
   LeadConversionStore,
 } from "../services/lead-conversion-service.js";
-
-type JobRow = typeof jobs.$inferSelect;
+import { toJobSummary } from "./job-mappers.js";
 
 export class LeadConversionRepository implements LeadConversionStore {
   constructor(private readonly db: AppDb) {}
@@ -107,36 +100,4 @@ export class LeadConversionRepository implements LeadConversionStore {
 
     return toJobSummary(row);
   }
-}
-
-function toJobSummary(row: JobRow): JobSummary {
-  const repairShoprReference = toRepairShoprReference(row);
-
-  return JobSummarySchema.parse({
-    id: row.id,
-    state: row.state satisfies JobState,
-    ...(row.customerLabel ? { customerLabel: row.customerLabel } : {}),
-    ...(row.splitCategory ? { splitCategory: row.splitCategory } : {}),
-    ...(row.grossChargeCents !== null
-      ? { grossChargeCents: row.grossChargeCents }
-      : {}),
-    ...(row.reportedProfitCents !== null
-      ? { reportedProfitCents: row.reportedProfitCents }
-      : {}),
-    ...(row.profitBasis ? { profitBasis: row.profitBasis } : {}),
-    ...(repairShoprReference ? { repairShoprReference } : {}),
-  });
-}
-
-function toRepairShoprReference(row: JobRow): RepairShoprReference | null {
-  if (!row.repairShoprEntityType || !row.repairShoprId) {
-    return null;
-  }
-
-  return RepairShoprReferenceSchema.parse({
-    entityType: row.repairShoprEntityType,
-    repairShoprId: row.repairShoprId,
-    displayLabel:
-      row.customerLabel ?? `${row.repairShoprEntityType} ${row.repairShoprId}`,
-  });
 }

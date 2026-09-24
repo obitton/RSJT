@@ -5,8 +5,6 @@ import type {
 } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
-import type { AuthSessionService } from "../services/auth-service.js";
 import {
   InvalidWritebackPayloadError,
   WritebackApprovalNotApprovedError,
@@ -14,6 +12,8 @@ import {
   WritebackExecutionNotRetryableError,
   type WritebackExecutionServiceApi,
 } from "../services/writeback-execution-service.js";
+import { createFakeAuthService } from "./support/fake-auth-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const techUser: SessionUser = {
   id: "00000000-0000-4000-8000-000000000020",
@@ -31,10 +31,13 @@ const jobId = "00000000-0000-4000-8000-000000070103";
 
 describe("writeback routes", () => {
   it("requires authentication", async () => {
-    const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
-      writebackExecutionService: new TestWritebackService(),
-    });
+    const app = await buildApp(
+      testConfig({ REPAIRSHOPR_WRITEBACK_ENABLED: false }),
+      {
+        authService: createFakeAuthService(sessions),
+        writebackExecutionService: new TestWritebackService(),
+      },
+    );
 
     const response = await app.inject({
       method: "GET",
@@ -47,10 +50,13 @@ describe("writeback routes", () => {
 
   it("lists writeback executions for tech sessions", async () => {
     const service = new TestWritebackService();
-    const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
-      writebackExecutionService: service,
-    });
+    const app = await buildApp(
+      testConfig({ REPAIRSHOPR_WRITEBACK_ENABLED: false }),
+      {
+        authService: createFakeAuthService(sessions),
+        writebackExecutionService: service,
+      },
+    );
 
     const response = await app.inject({
       method: "GET",
@@ -68,10 +74,13 @@ describe("writeback routes", () => {
 
   it("executes approved approvals and retries executions", async () => {
     const service = new TestWritebackService();
-    const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
-      writebackExecutionService: service,
-    });
+    const app = await buildApp(
+      testConfig({ REPAIRSHOPR_WRITEBACK_ENABLED: false }),
+      {
+        authService: createFakeAuthService(sessions),
+        writebackExecutionService: service,
+      },
+    );
 
     const executeResponse = await app.inject({
       method: "POST",
@@ -93,10 +102,13 @@ describe("writeback routes", () => {
 
   it("maps writeback service errors to HTTP errors", async () => {
     const service = new TestWritebackService();
-    const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
-      writebackExecutionService: service,
-    });
+    const app = await buildApp(
+      testConfig({ REPAIRSHOPR_WRITEBACK_ENABLED: false }),
+      {
+        authService: createFakeAuthService(sessions),
+        writebackExecutionService: service,
+      },
+    );
 
     service.nextError = new WritebackApprovalNotFoundError();
     const notFound = await app.inject({
@@ -134,9 +146,12 @@ describe("writeback routes", () => {
   });
 
   it("returns 503 when the service is unavailable", async () => {
-    const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
-    });
+    const app = await buildApp(
+      testConfig({ REPAIRSHOPR_WRITEBACK_ENABLED: false }),
+      {
+        authService: createFakeAuthService(sessions),
+      },
+    );
 
     const response = await app.inject({
       method: "GET",
@@ -149,24 +164,10 @@ describe("writeback routes", () => {
   });
 });
 
-class TestAuthService implements AuthSessionService {
-  async login() {
-    return {
-      token: "session-token-tech",
-      user: techUser,
-    };
-  }
-  async getSession(token: string) {
-    if (token === "session-token-tech") {
-      return { user: techUser };
-    }
-    if (token === "session-token-manager") {
-      return { user: managerUser };
-    }
-    return null;
-  }
-  async logout() {}
-}
+const sessions = {
+  "session-token-tech": techUser,
+  "session-token-manager": managerUser,
+};
 
 class TestWritebackService implements WritebackExecutionServiceApi {
   nextError: Error | null = null;
@@ -241,19 +242,5 @@ function authHeader(role: "tech" | "manager") {
       role === "tech"
         ? "Bearer session-token-tech"
         : "Bearer session-token-manager",
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    REPAIRSHOPR_WRITEBACK_ENABLED: false,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }
