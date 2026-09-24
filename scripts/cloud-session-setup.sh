@@ -25,6 +25,18 @@ run_step() {
   return "$rc"
 }
 
+# Planning docs come from a private repo (see AGENTS.md). The session can clone
+# it only when the repo is attached to the session.
+pm_repo=https://github.com/obitton/rsjt-project-management
+if [ -d .project-management/.git ]; then
+  run_step project-management git -C .project-management pull --ff-only
+elif [ -e .project-management ]; then
+  echo "cloud setup: .project-management exists but is not a clone of $pm_repo, left as is"
+else
+  run_step project-management git clone "$pm_repo" .project-management ||
+    echo "cloud setup: attach obitton/rsjt-project-management to this session to get the planning docs"
+fi
+
 # The db scripts read DATABASE_URL from .env.
 [ -f .env ] || cp .env.example .env
 

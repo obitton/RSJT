@@ -19,7 +19,7 @@ This is a personal project owned by Ofir. It is not a Tenex client project and m
 
 - Project files should live under `/Users/ofirbitton/dev/RSJT`.
 - Temporary scratch files may live under `/private/tmp` when needed.
-- Planning artifacts should be local markdown files in this repo.
+- Planning artifacts are markdown files in `.project-management/` (see below). They are not committed to this public repo.
 
 ## Local Development Flow
 
@@ -46,7 +46,13 @@ Use the Tenex planning structure as a local methodology only:
 
 ## Local Project Management Structure
 
-Use this repo-local structure when creating planning artifacts:
+This repo is public, so planning artifacts live in the private repo `obitton/rsjt-project-management`. Clone it into `.project-management/` at the root of this checkout, where this repo's `.gitignore` excludes it. Commit and push planning changes from inside that folder, to the private repo. Never commit planning artifacts or other non-code notes to this repo without asking Ofir.
+
+```sh
+git clone https://github.com/obitton/rsjt-project-management .project-management
+```
+
+Use this structure when creating planning artifacts:
 
 ```text
 .project-management/
