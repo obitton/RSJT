@@ -1,12 +1,12 @@
 import type { SessionUser, UpdateExtractionResponse } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
-import type { AuthSessionService } from "../services/auth-service.js";
 import type {
   ExtractJobUpdateInput,
   UpdateExtractionServiceApi,
 } from "../services/update-extraction-service.js";
+import { createFakeAuthService } from "./support/fake-auth-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const managerUser: SessionUser = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -24,7 +24,7 @@ const messageId = "00000000-0000-4000-8000-000000000201";
 describe("update routes", () => {
   it("requires authentication", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       updateExtractionService: new TestUpdateExtractionService(),
     });
 
@@ -42,7 +42,7 @@ describe("update routes", () => {
 
   it("validates request bodies", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       updateExtractionService: new TestUpdateExtractionService(),
     });
 
@@ -62,7 +62,7 @@ describe("update routes", () => {
   it("extracts updates submitted by a tech user", async () => {
     const updateExtractionService = new TestUpdateExtractionService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       updateExtractionService,
     });
 
@@ -89,7 +89,7 @@ describe("update routes", () => {
   it("extracts updates submitted by a manager user", async () => {
     const updateExtractionService = new TestUpdateExtractionService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       updateExtractionService,
     });
 
@@ -114,7 +114,7 @@ describe("update routes", () => {
 
   it("keeps health available when the update extraction service is unavailable", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
     });
 
     const healthResponse = await app.inject({
@@ -139,28 +139,10 @@ describe("update routes", () => {
   });
 });
 
-class TestAuthService implements AuthSessionService {
-  async login() {
-    return {
-      token: "session-token-manager",
-      user: managerUser,
-    };
-  }
-
-  async getSession(token: string) {
-    if (token === "session-token-manager") {
-      return { user: managerUser };
-    }
-
-    if (token === "session-token-tech") {
-      return { user: techUser };
-    }
-
-    return null;
-  }
-
-  async logout() {}
-}
+const sessions = {
+  "session-token-manager": managerUser,
+  "session-token-tech": techUser,
+};
 
 class TestUpdateExtractionService implements UpdateExtractionServiceApi {
   readonly requests: ExtractJobUpdateInput[] = [];
@@ -204,18 +186,5 @@ function authHeader(role: "manager" | "tech") {
       role === "manager"
         ? "Bearer session-token-manager"
         : "Bearer session-token-tech",
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }

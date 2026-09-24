@@ -1,13 +1,13 @@
 import type { ContactCardPreviewResponse, SessionUser } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
-import type { AuthSessionService } from "../services/auth-service.js";
 import {
   ContactCardNotFoundError,
   type ContactCardServiceApi,
   ContactCardUnavailableError,
 } from "../services/contact-card-service.js";
+import { createFakeAuthService } from "./support/fake-auth-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const managerUser: SessionUser = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -26,7 +26,7 @@ const conversationId = "00000000-0000-4000-8000-000000060401";
 describe("contact card routes", () => {
   it("requires authentication", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       contactCardService: new TestContactCardService(),
     });
 
@@ -41,7 +41,7 @@ describe("contact card routes", () => {
 
   it("rejects tech sessions", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       contactCardService: new TestContactCardService(),
     });
 
@@ -58,7 +58,7 @@ describe("contact card routes", () => {
   it("returns contact card preview JSON for managers", async () => {
     const service = new TestContactCardService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       contactCardService: service,
     });
 
@@ -77,7 +77,7 @@ describe("contact card routes", () => {
   it("returns vCard text for managers", async () => {
     const service = new TestContactCardService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       contactCardService: service,
     });
 
@@ -98,7 +98,7 @@ describe("contact card routes", () => {
     const service = new TestContactCardService();
     service.unavailable = true;
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       contactCardService: service,
     });
 
@@ -117,7 +117,7 @@ describe("contact card routes", () => {
     const service = new TestContactCardService();
     service.missing = true;
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       contactCardService: service,
     });
 
@@ -133,7 +133,7 @@ describe("contact card routes", () => {
 
   it("returns 400 for invalid conversation IDs", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       contactCardService: new TestContactCardService(),
     });
 
@@ -148,26 +148,10 @@ describe("contact card routes", () => {
   });
 });
 
-class TestAuthService implements AuthSessionService {
-  async login() {
-    return {
-      token: "session-token-manager",
-      user: managerUser,
-    };
-  }
-
-  async getSession(token: string) {
-    if (token === "session-token-manager") {
-      return { user: managerUser };
-    }
-    if (token === "session-token-tech") {
-      return { user: techUser };
-    }
-    return null;
-  }
-
-  async logout() {}
-}
+const sessions = {
+  "session-token-manager": managerUser,
+  "session-token-tech": techUser,
+};
 
 class TestContactCardService implements ContactCardServiceApi {
   missing = false;
@@ -218,18 +202,5 @@ function authHeader(role: "manager" | "tech") {
       role === "manager"
         ? "Bearer session-token-manager"
         : "Bearer session-token-tech",
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }

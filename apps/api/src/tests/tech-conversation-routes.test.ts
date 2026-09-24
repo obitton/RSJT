@@ -8,8 +8,6 @@ import type {
 } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
-import type { AuthSessionService } from "../services/auth-service.js";
 import {
   LeadAlreadyConvertedError,
   type LeadConversionServiceApi,
@@ -22,6 +20,8 @@ import {
   OutboundMessagingDisabledError,
   TakeoverInactiveError,
 } from "../services/live-takeover-service.js";
+import { createFakeAuthService } from "./support/fake-auth-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const techUser: SessionUser = {
   id: "00000000-0000-4000-8000-000000000003",
@@ -41,7 +41,7 @@ describe("tech conversation routes", () => {
   it("requires authentication", async () => {
     const service = new TestLiveTakeoverService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       liveTakeoverService: service,
     });
 
@@ -57,7 +57,7 @@ describe("tech conversation routes", () => {
   it("returns the conversation list for a tech session", async () => {
     const service = new TestLiveTakeoverService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       liveTakeoverService: service,
     });
 
@@ -77,7 +77,7 @@ describe("tech conversation routes", () => {
   it("returns conversation detail or 404", async () => {
     const service = new TestLiveTakeoverService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       liveTakeoverService: service,
     });
 
@@ -105,7 +105,7 @@ describe("tech conversation routes", () => {
   it("toggles takeover and rejects unauthorized roles", async () => {
     const service = new TestLiveTakeoverService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       liveTakeoverService: service,
     });
 
@@ -127,7 +127,7 @@ describe("tech conversation routes", () => {
     const service = new TestLiveTakeoverService();
     service.nextSendError = new TakeoverInactiveError();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       liveTakeoverService: service,
     });
 
@@ -160,7 +160,7 @@ describe("tech conversation routes", () => {
   it("returns the persisted message on a successful send", async () => {
     const service = new TestLiveTakeoverService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       liveTakeoverService: service,
     });
 
@@ -183,7 +183,7 @@ describe("tech conversation routes", () => {
 
   it("returns 503 when the tech conversation service is unavailable", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
     });
 
     const response = await app.inject({
@@ -203,7 +203,7 @@ describe("tech conversation routes", () => {
   it("converts a scheduled lead to a job for both tech and manager", async () => {
     const conversionService = new TestLeadConversionService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       liveTakeoverService: new TestLiveTakeoverService(),
       leadConversionService: conversionService,
     });
@@ -233,7 +233,7 @@ describe("tech conversation routes", () => {
   it("maps conversion conflicts to 409", async () => {
     const conversionService = new TestLeadConversionService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       liveTakeoverService: new TestLiveTakeoverService(),
       leadConversionService: conversionService,
     });
@@ -277,7 +277,7 @@ describe("tech conversation routes", () => {
 
   it("returns 503 when the lead conversion service is unavailable", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
     });
 
     const response = await app.inject({
@@ -295,24 +295,10 @@ describe("tech conversation routes", () => {
   });
 });
 
-class TestAuthService implements AuthSessionService {
-  async login() {
-    return {
-      token: "session-token-tech",
-      user: techUser,
-    };
-  }
-  async getSession(token: string) {
-    if (token === "session-token-tech") {
-      return { user: techUser };
-    }
-    if (token === "session-token-manager") {
-      return { user: managerUser };
-    }
-    return null;
-  }
-  async logout() {}
-}
+const sessions = {
+  "session-token-tech": techUser,
+  "session-token-manager": managerUser,
+};
 
 class TestLiveTakeoverService implements LiveTakeoverServiceApi {
   missing = false;
@@ -435,18 +421,5 @@ function authHeader(role: "tech" | "manager") {
       role === "tech"
         ? "Bearer session-token-tech"
         : "Bearer session-token-manager",
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }

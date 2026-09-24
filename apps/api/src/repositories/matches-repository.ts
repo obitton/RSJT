@@ -8,6 +8,7 @@ import {
   RepairShoprReferenceSchema,
 } from "@rsjt/shared";
 import { and, eq, isNotNull } from "drizzle-orm";
+import { confidenceToBasisPoints } from "./confidence-basis-points.js";
 
 type MatchCandidateRow = typeof matchCandidates.$inferSelect;
 
@@ -199,8 +200,4 @@ function toRepairShoprReference(row: MatchCandidateRow): RepairShoprReference {
     displayLabel: row.repairShoprDisplayLabel,
     ...(row.repairShoprUrl ? { url: row.repairShoprUrl } : {}),
   });
-}
-
-function confidenceToBasisPoints(confidence: number) {
-  return Math.round(confidence * 10000);
 }

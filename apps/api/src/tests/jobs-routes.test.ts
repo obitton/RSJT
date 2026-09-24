@@ -5,14 +5,14 @@ import type {
 } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
-import type { AuthSessionService } from "../services/auth-service.js";
 import {
   type JobCancellationServiceApi,
   JobNotCancelableError,
   JobNotFoundError,
 } from "../services/job-cancellation-service.js";
 import type { JobUpdateFeedServiceApi } from "../services/job-update-feed-service.js";
+import { createFakeAuthService } from "./support/fake-auth-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const techUser: SessionUser = {
   id: "00000000-0000-4000-8000-000000000002",
@@ -31,7 +31,7 @@ const cancelJobId = "00000000-0000-4000-8000-0000000b0001";
 describe("jobs routes", () => {
   it("requires authentication", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       jobUpdateFeedService: new TestJobUpdateFeedService(),
     });
 
@@ -48,7 +48,7 @@ describe("jobs routes", () => {
 
   it("returns update feed jobs for an authenticated user", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       jobUpdateFeedService: new TestJobUpdateFeedService(),
     });
 
@@ -66,7 +66,7 @@ describe("jobs routes", () => {
 
   it("keeps health available when the job feed service is unavailable", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
     });
 
     const healthResponse = await app.inject({
@@ -93,7 +93,7 @@ describe("jobs routes", () => {
 describe("jobs routes: cancel", () => {
   it("requires authentication", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       jobCancellationService: new TestJobCancellationService(),
     });
 
@@ -110,7 +110,7 @@ describe("jobs routes: cancel", () => {
   it("cancels a job for both tech and manager", async () => {
     const service = new TestJobCancellationService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       jobCancellationService: service,
     });
 
@@ -142,7 +142,7 @@ describe("jobs routes: cancel", () => {
   it("rejects an empty reason with 400 and does not call the service", async () => {
     const service = new TestJobCancellationService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       jobCancellationService: service,
     });
 
@@ -162,7 +162,7 @@ describe("jobs routes: cancel", () => {
   it("maps not-found and not-cancelable errors", async () => {
     const service = new TestJobCancellationService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       jobCancellationService: service,
     });
 
@@ -193,7 +193,7 @@ describe("jobs routes: cancel", () => {
 
   it("returns 503 when the job cancellation service is unavailable", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
     });
 
     const response = await app.inject({
@@ -212,28 +212,10 @@ describe("jobs routes: cancel", () => {
   });
 });
 
-class TestAuthService implements AuthSessionService {
-  async login() {
-    return {
-      token: "session-token-tech",
-      user: techUser,
-    };
-  }
-
-  async getSession(token: string) {
-    if (token === "session-token-tech") {
-      return { user: techUser };
-    }
-
-    if (token === "session-token-manager") {
-      return { user: managerUser };
-    }
-
-    return null;
-  }
-
-  async logout() {}
-}
+const sessions = {
+  "session-token-tech": techUser,
+  "session-token-manager": managerUser,
+};
 
 class TestJobCancellationService implements JobCancellationServiceApi {
   nextError: Error | null = null;
@@ -289,18 +271,5 @@ function authHeader(role: "tech" | "manager" = "tech") {
       role === "tech"
         ? "Bearer session-token-tech"
         : "Bearer session-token-manager",
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }

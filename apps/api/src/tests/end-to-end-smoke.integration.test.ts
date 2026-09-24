@@ -22,7 +22,6 @@ import type {
 } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
 import type { ApprovalServiceApi } from "../services/approval-service.js";
 import type { AuthSessionService } from "../services/auth-service.js";
 import type { ContactCardServiceApi } from "../services/contact-card-service.js";
@@ -38,6 +37,7 @@ import type {
   UpdateExtractionServiceApi,
 } from "../services/update-extraction-service.js";
 import type { WritebackExecutionServiceApi } from "../services/writeback-execution-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const managerUser: SessionUser = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -77,17 +77,20 @@ describe("end-to-end smoke workflow", () => {
     const jobMoneyService = new FixtureJobMoneyService();
     const reminderService = new FixtureReminderService();
     const contactCardService = new FixtureContactCardService();
-    const app = await buildApp(testConfig(), {
-      authService: new FixtureAuthService(),
-      messagingWebhookService,
-      matchingService,
-      approvalService,
-      writebackExecutionService,
-      updateExtractionService,
-      jobMoneyService,
-      reminderService,
-      contactCardService,
-    });
+    const app = await buildApp(
+      testConfig({ REPAIRSHOPR_WRITEBACK_ENABLED: false }),
+      {
+        authService: new FixtureAuthService(),
+        messagingWebhookService,
+        matchingService,
+        approvalService,
+        writebackExecutionService,
+        updateExtractionService,
+        jobMoneyService,
+        reminderService,
+        contactCardService,
+      },
+    );
 
     const inbound = await app.inject({
       method: "POST",
@@ -599,19 +602,5 @@ function authHeader(role: "manager" | "tech") {
       role === "manager"
         ? "Bearer session-token-manager"
         : "Bearer session-token-tech",
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    REPAIRSHOPR_WRITEBACK_ENABLED: false,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }
