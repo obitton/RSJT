@@ -4,7 +4,7 @@ import sensible from "@fastify/sensible";
 import type { AppDb } from "@rsjt/db";
 import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
-import type { ApiConfig } from "./config.js";
+import { type ApiConfig, parseAllowlist } from "./config.js";
 import { createRepairShoprClientFromEnv } from "./integrations/repairshopr/repairshopr-client.js";
 import { createRepairShoprWriteClientFromEnv } from "./integrations/repairshopr/repairshopr-write-client.js";
 import { TwilioOutboundMessenger } from "./integrations/twilio/twilio-outbound-messenger.js";
@@ -430,17 +430,6 @@ function createDefaultCustomerMessageExecutor(
         channel: config.MESSAGING_CHANNEL,
       }),
   };
-}
-
-function parseAllowlist(value: string | undefined) {
-  if (!value) {
-    return [];
-  }
-
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
 }
 
 function createDefaultSchedulingProposalService(
