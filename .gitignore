@@ -8,3 +8,6 @@ dist
 coverage
 .expo
 .turbo
+# Planning docs live in the private repo obitton/rsjt-project-management,
+# cloned here. See AGENTS.md.
+/.project-management
