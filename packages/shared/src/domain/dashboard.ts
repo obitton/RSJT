@@ -3,6 +3,7 @@ import { ApprovalKindSchema, ApprovalRiskSchema } from "./approvals.js";
 import { MatchConfidenceBandSchema } from "./confidence.js";
 import { CustomerIntakeStateSchema } from "./intake.js";
 import { JobOriginSchema, JobStateSchema } from "./jobs.js";
+import { JsonDateSchema } from "./json-date.js";
 import {
   MoneyCentsSchema,
   ProfitBasisSchema,
@@ -39,7 +40,7 @@ export const ManagerDashboardJobSchema = z.object({
   originNote: z.string().min(1).optional(),
   state: JobStateSchema,
   customerLabel: z.string().min(1).optional(),
-  updatedAt: z.date(),
+  updatedAt: JsonDateSchema,
   repairShoprReference: RepairShoprReferenceSchema.optional(),
   splitCategory: SplitCategorySchema.optional(),
   grossChargeCents: MoneyCentsSchema.optional(),
@@ -50,15 +51,15 @@ export const ManagerDashboardJobSchema = z.object({
   selectedMatchConfidenceBand: MatchConfidenceBandSchema.optional(),
   // Present only on a canceled job: why it was canceled and when.
   cancelReason: z.string().min(1).optional(),
-  canceledAt: z.date().optional(),
+  canceledAt: JsonDateSchema.optional(),
 });
 
 export const TakeoverConversationSummarySchema = z.object({
   id: z.string().uuid(),
   externalPhone: z.string().min(1).nullable(),
   takeoverActive: z.boolean(),
-  takeoverStartedAt: z.date().nullable(),
-  updatedAt: z.date(),
+  takeoverStartedAt: JsonDateSchema.nullable(),
+  updatedAt: JsonDateSchema,
 });
 
 // A Lead is a conversation that has not been blocked as spam. It may or may not
@@ -70,7 +71,7 @@ export const LeadSummarySchema = z.object({
   intakeState: CustomerIntakeStateSchema,
   takeoverActive: z.boolean(),
   lastInboundPreview: z.string().min(1).nullable(),
-  updatedAt: z.date(),
+  updatedAt: JsonDateSchema,
 });
 
 export const LeadDetailSchema = z.object({
@@ -85,8 +86,8 @@ export const LeadDetailSchema = z.object({
   problemDescription: z.string().min(1).nullable(),
   preferredTiming: z.string().min(1).nullable(),
   matchedReference: RepairShoprReferenceSchema.nullable(),
-  lastInboundAt: z.date().nullable(),
-  updatedAt: z.date(),
+  lastInboundAt: JsonDateSchema.nullable(),
+  updatedAt: JsonDateSchema,
 });
 
 export const ManagerLeadDetailParamsSchema = z.object({
@@ -123,7 +124,7 @@ export const PendingApprovalSummarySchema = z.object({
   kind: ApprovalKindSchema,
   risk: ApprovalRiskSchema,
   requiredRole: UserRoleSchema,
-  updatedAt: z.date(),
+  updatedAt: JsonDateSchema,
 });
 
 export const SelectedMatchSummarySchema = z.object({

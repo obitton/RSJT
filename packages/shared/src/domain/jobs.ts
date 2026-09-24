@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MatchConfidenceBandSchema, MatchReasonSchema } from "./confidence.js";
+import { JsonDateSchema } from "./json-date.js";
 import {
   MoneyCentsSchema,
   ProfitBasisSchema,
@@ -77,7 +78,7 @@ export const JobSummarySchema = z.object({
   // Present only on a canceled job: the reason a tech or manager gave, and when
   // it was canceled.
   cancelReason: z.string().min(1).optional(),
-  canceledAt: z.date().optional(),
+  canceledAt: JsonDateSchema.optional(),
 });
 
 // Cancelling a job requires a short reason. Both techs and managers can cancel.

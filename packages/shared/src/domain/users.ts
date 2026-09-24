@@ -18,7 +18,12 @@ export const LoginResponseSchema = z.object({
   user: SessionUserSchema,
 });
 
+export const AuthSessionResponseSchema = z.object({
+  user: SessionUserSchema,
+});
+
 export type UserRole = z.infer<typeof UserRoleSchema>;
 export type SessionUser = z.infer<typeof SessionUserSchema>;
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+export type AuthSessionResponse = z.infer<typeof AuthSessionResponseSchema>;

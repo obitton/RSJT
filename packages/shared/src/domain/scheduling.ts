@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SourceEvidenceSchema } from "./jobs.js";
+import { JsonDateSchema } from "./json-date.js";
 
 export const SchedulingProposalStateSchema = z.enum([
   "pending",
@@ -10,8 +11,8 @@ export const SchedulingProposalStateSchema = z.enum([
 
 export const SchedulingWindowSchema = z
   .object({
-    startAt: z.date().nullable(),
-    endAt: z.date().nullable(),
+    startAt: JsonDateSchema.nullable(),
+    endAt: JsonDateSchema.nullable(),
   })
   .refine(
     (value) => {
@@ -37,17 +38,17 @@ export const SchedulingProposalSchema = z.object({
   jobId: z.string().uuid().nullable(),
   state: SchedulingProposalStateSchema,
   preferredWindowText: z.string().min(1),
-  startAt: z.date().nullable(),
-  endAt: z.date().nullable(),
+  startAt: JsonDateSchema.nullable(),
+  endAt: JsonDateSchema.nullable(),
   customerMessageBody: z.string().trim().min(1),
   repairShoprAppointmentPayload: RepairShoprAppointmentPayloadSchema,
   sourceEvidence: z.array(SourceEvidenceSchema).min(1),
   customerMessageApprovalId: z.string().uuid().nullable(),
   appointmentApprovalId: z.string().uuid().nullable(),
   decidedByUserId: z.string().uuid().nullable(),
-  decidedAt: z.date().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  decidedAt: JsonDateSchema.nullable(),
+  createdAt: JsonDateSchema,
+  updatedAt: JsonDateSchema,
 });
 
 export const SchedulingProposalListResponseSchema = z.object({

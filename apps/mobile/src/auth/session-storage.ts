@@ -1,5 +1,4 @@
-import { toLoginResponse } from "@/auth/session-validation";
-import type { LoginResponse } from "@rsjt/shared";
+import { type LoginResponse, LoginResponseSchema } from "@rsjt/shared";
 import * as SecureStore from "expo-secure-store";
 
 const SESSION_STORAGE_KEY = "rsjt.auth.session";
@@ -16,9 +15,9 @@ export async function getStoredSession() {
 
   const parsed = parseStoredValue(value);
   if (parsed) {
-    const session = toLoginResponse(parsed);
-    if (session) {
-      return session;
+    const session = LoginResponseSchema.safeParse(parsed);
+    if (session.success) {
+      return session.data;
     }
   }
 

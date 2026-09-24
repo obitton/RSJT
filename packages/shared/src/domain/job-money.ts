@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { JobStateSchema } from "./jobs.js";
+import { JsonDateSchema } from "./json-date.js";
 import {
   ExpenseCategorySchema,
   MoneyCentsSchema,
@@ -33,8 +34,8 @@ export const JobExpenseSchema = z.object({
   amountCents: MoneyCentsSchema,
   description: z.string().nullable(),
   enteredByUserId: z.string().uuid().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: JsonDateSchema,
+  updatedAt: JsonDateSchema,
 });
 
 export const JobMoneySummarySchema = z.object({

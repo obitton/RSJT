@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ApprovalKindSchema } from "./approvals.js";
+import { JsonDateSchema } from "./json-date.js";
 import { RepairShoprEntityTypeSchema } from "./repairshopr.js";
 
 const JsonObjectSchema = z.record(z.string(), z.unknown());
@@ -128,11 +129,11 @@ export const WritebackExecutionSchema = z.object({
   repairShoprEntityType: RepairShoprEntityTypeSchema.nullable(),
   repairShoprId: z.string().min(1).nullable(),
   attemptCount: z.number().int().nonnegative(),
-  lastAttemptedAt: z.date().nullable(),
+  lastAttemptedAt: JsonDateSchema.nullable(),
   executedByUserId: z.string().uuid().nullable(),
-  succeededAt: z.date().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  succeededAt: JsonDateSchema.nullable(),
+  createdAt: JsonDateSchema,
+  updatedAt: JsonDateSchema,
 });
 
 export const WritebackExecutionListQuerySchema = z.object({
