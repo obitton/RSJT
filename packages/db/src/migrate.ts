@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { createDb, createPool } from "./connection.js";
 
@@ -10,5 +11,8 @@ if (!databaseUrl) {
 const pool = createPool(databaseUrl);
 const db = createDb(pool);
 
-await migrate(db, { migrationsFolder: "src/migrations" });
+const migrationsFolder = fileURLToPath(
+  new URL("./migrations", import.meta.url),
+);
+await migrate(db, { migrationsFolder });
 await pool.end();
