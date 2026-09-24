@@ -1,3 +1,4 @@
+import { formatJobStateLabel } from "@/dashboard/dashboard-format";
 import type { JobState, ReminderReason } from "@rsjt/shared";
 
 export function formatReminderReason(reason: ReminderReason) {
@@ -18,22 +19,7 @@ export function formatReminderReason(reason: ReminderReason) {
 }
 
 export function formatReminderState(state: JobState) {
-  switch (state) {
-    case "unmatched":
-      return "Unmatched";
-    case "intake":
-      return "Intake";
-    case "accepted":
-      return "Accepted";
-    case "scheduled":
-      return "Scheduled";
-    case "completed":
-      return "Completed";
-    case "payout_ready":
-      return "Payout ready";
-    case "closed":
-      return "Closed";
-  }
+  return formatJobStateLabel(state);
 }
 
 export function formatReminderActionLabel(reason: ReminderReason) {

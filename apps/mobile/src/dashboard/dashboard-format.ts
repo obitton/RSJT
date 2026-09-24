@@ -71,6 +71,10 @@ export function formatJobStateLabel(state: JobState) {
       return "Closed";
     case "canceled":
       return "Canceled";
+    default: {
+      const exhaustive: never = state;
+      return exhaustive;
+    }
   }
 }
 
