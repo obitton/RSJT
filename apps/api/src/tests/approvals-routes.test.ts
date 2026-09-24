@@ -8,14 +8,14 @@ import type {
 } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
 import {
   ApprovalNotFoundError,
   ApprovalNotPendingError,
   ApprovalRoleError,
   type ApprovalServiceApi,
 } from "../services/approval-service.js";
-import type { AuthSessionService } from "../services/auth-service.js";
+import { createFakeAuthService } from "./support/fake-auth-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const managerUser: SessionUser = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -34,7 +34,7 @@ const messageId = "00000000-0000-4000-8000-000000000201";
 describe("approval routes", () => {
   it("requires authentication", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       approvalService: new TestApprovalService(),
     });
 
@@ -52,7 +52,7 @@ describe("approval routes", () => {
   it("creates a staged approval", async () => {
     const approvalService = new TestApprovalService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       approvalService,
     });
     const payload = createPayload();
@@ -73,7 +73,7 @@ describe("approval routes", () => {
 
   it("validates create payloads", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       approvalService: new TestApprovalService(),
     });
 
@@ -99,7 +99,7 @@ describe("approval routes", () => {
   it("lists approvals with filters", async () => {
     const approvalService = new TestApprovalService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       approvalService,
     });
 
@@ -127,7 +127,7 @@ describe("approval routes", () => {
   it("edits, approves, rejects, and expires approvals", async () => {
     const approvalService = new TestApprovalService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       approvalService,
     });
 
@@ -182,7 +182,7 @@ describe("approval routes", () => {
   it("maps approval service errors to HTTP errors", async () => {
     const approvalService = new TestApprovalService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       approvalService,
     });
 
@@ -221,7 +221,7 @@ describe("approval routes", () => {
 
   it("keeps health available when the approval service is unavailable", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
     });
 
     const healthResponse = await app.inject({
@@ -245,28 +245,10 @@ describe("approval routes", () => {
   });
 });
 
-class TestAuthService implements AuthSessionService {
-  async login() {
-    return {
-      token: "session-token-manager",
-      user: managerUser,
-    };
-  }
-
-  async getSession(token: string) {
-    if (token === "session-token-manager") {
-      return { user: managerUser };
-    }
-
-    if (token === "session-token-tech") {
-      return { user: techUser };
-    }
-
-    return null;
-  }
-
-  async logout() {}
-}
+const sessions = {
+  "session-token-manager": managerUser,
+  "session-token-tech": techUser,
+};
 
 class TestApprovalService implements ApprovalServiceApi {
   nextError: Error | null = null;
@@ -395,18 +377,5 @@ function authHeader(role: "manager" | "tech") {
       role === "manager"
         ? "Bearer session-token-manager"
         : "Bearer session-token-tech",
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }

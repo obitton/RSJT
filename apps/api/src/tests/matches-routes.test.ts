@@ -7,12 +7,12 @@ import type {
 } from "@rsjt/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
-import type { ApiConfig } from "../config.js";
-import type { AuthSessionService } from "../services/auth-service.js";
 import {
   MatchCandidateNotFoundError,
   type MatchingServiceApi,
 } from "../services/matching-service.js";
+import { createFakeAuthService } from "./support/fake-auth-service.js";
+import { testConfig } from "./support/test-config.js";
 
 const managerUser: SessionUser = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -32,7 +32,7 @@ const repairShoprReference: RepairShoprReference = {
 describe("match routes", () => {
   it("requires authentication", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       matchingService: new TestMatchingService(),
     });
 
@@ -50,7 +50,7 @@ describe("match routes", () => {
   it("searches matches for an authenticated user", async () => {
     const matchingService = new TestMatchingService();
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       matchingService,
     });
 
@@ -81,7 +81,7 @@ describe("match routes", () => {
 
   it("validates search request bodies", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       matchingService: new TestMatchingService(),
     });
 
@@ -102,7 +102,7 @@ describe("match routes", () => {
 
   it("lists stored candidates and reasons", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       matchingService: new TestMatchingService(),
     });
 
@@ -120,7 +120,7 @@ describe("match routes", () => {
 
   it("selects a candidate", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       matchingService: new TestMatchingService(),
     });
 
@@ -142,7 +142,7 @@ describe("match routes", () => {
 
   it("returns not found for an unknown selected candidate", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       matchingService: new TestMatchingService(),
     });
 
@@ -160,7 +160,7 @@ describe("match routes", () => {
 
   it("unlinks a selected candidate", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
       matchingService: new TestMatchingService(),
     });
 
@@ -182,7 +182,7 @@ describe("match routes", () => {
 
   it("keeps health available when the matching service is not configured", async () => {
     const app = await buildApp(testConfig(), {
-      authService: new TestAuthService(),
+      authService: createFakeAuthService(sessions),
     });
 
     const healthResponse = await app.inject({
@@ -206,24 +206,9 @@ describe("match routes", () => {
   });
 });
 
-class TestAuthService implements AuthSessionService {
-  async login() {
-    return {
-      token: "session-token-manager",
-      user: managerUser,
-    };
-  }
-
-  async getSession(token: string) {
-    if (token !== "session-token-manager") {
-      return null;
-    }
-
-    return { user: managerUser };
-  }
-
-  async logout() {}
-}
+const sessions = {
+  "session-token-manager": managerUser,
+};
 
 class TestMatchingService implements MatchingServiceApi {
   readonly searches: Array<{ jobId: string; input: MatchSearchInput }> = [];
@@ -287,18 +272,5 @@ function matchSearchResponse(id: string): MatchSearchResponse {
 function authHeader() {
   return {
     authorization: "Bearer session-token-manager",
-  };
-}
-
-function testConfig(): ApiConfig {
-  return {
-    NODE_ENV: "test",
-    DATABASE_URL: "postgres://rsjt:rsjt_local@localhost:54329/rsjt_dev",
-    API_HOST: "127.0.0.1",
-    API_PORT: 47630,
-    SESSION_TTL_HOURS: 720,
-    REPAIRSHOPR_TIMEOUT_MS: 10000,
-    MESSAGING_CHANNEL: "whatsapp_sandbox",
-    MESSAGING_OUTBOUND_ENABLED: false,
   };
 }

@@ -6,6 +6,7 @@ import {
   FactConfirmationConfidenceThreshold,
 } from "@rsjt/shared";
 import { eq } from "drizzle-orm";
+import { confidenceToBasisPoints } from "./confidence-basis-points.js";
 
 type ExtractedFactRow = typeof extractedFacts.$inferSelect;
 
@@ -72,8 +73,4 @@ function toStoredExtractedFact(row: ExtractedFactRow): StoredExtractedFact {
     id: row.id,
     createdAt: row.createdAt,
   };
-}
-
-function confidenceToBasisPoints(confidence: number) {
-  return Math.round(confidence * 10000);
 }
