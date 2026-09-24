@@ -1,3 +1,4 @@
+import { formatMoneyCents } from "@/money/money-format";
 import type {
   JobOrigin,
   JobState,
@@ -85,10 +86,6 @@ export function formatJobOriginLabel(origin: JobOrigin) {
     case "manual":
       return "Manual";
   }
-}
-
-export function formatMoneyCents(amountCents: number) {
-  return `$${(amountCents / 100).toFixed(amountCents % 100 === 0 ? 0 : 2)}`;
 }
 
 export function formatJobChargeLabel(job: ManagerDashboardJob) {
