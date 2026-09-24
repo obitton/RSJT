@@ -1,5 +1,5 @@
 import twilio from "twilio";
-import type { ApiConfig } from "../../config.js";
+import { type ApiConfig, parseAllowlist } from "../../config.js";
 
 export type OutboundChannel = "sms" | "whatsapp_sandbox";
 
@@ -45,6 +45,7 @@ export type TwilioClientFactory = (
 export type TwilioOutboundConfig = Pick<
   ApiConfig,
   | "MESSAGING_OUTBOUND_ENABLED"
+  | "MESSAGING_TEST_RECIPIENT_ALLOWLIST"
   | "MESSAGING_CHANNEL"
   | "TWILIO_ACCOUNT_SID"
   | "TWILIO_AUTH_TOKEN"
@@ -74,6 +75,13 @@ export class TwilioOutboundMessenger implements OutboundMessenger {
       return {
         kind: "disabled",
         reason: "Outbound messaging disabled",
+      };
+    }
+
+    if (!this.isRecipientAllowed(input.toExternalPhone)) {
+      return {
+        kind: "disabled",
+        reason: "Recipient is not in MESSAGING_TEST_RECIPIENT_ALLOWLIST",
       };
     }
 
@@ -115,6 +123,19 @@ export class TwilioOutboundMessenger implements OutboundMessenger {
       };
     }
   }
+
+  private isRecipientAllowed(toExternalPhone: string) {
+    const allowlist = parseAllowlist(
+      this.config.MESSAGING_TEST_RECIPIENT_ALLOWLIST,
+    );
+    if (allowlist.includes("*")) {
+      return true;
+    }
+    return allowlist.some(
+      (entry) =>
+        normalizeRecipient(entry) === normalizeRecipient(toExternalPhone),
+    );
+  }
 }
 
 function chooseSender(
@@ -141,6 +162,10 @@ function formatRecipient(toExternalPhone: string, channel: OutboundChannel) {
     return `whatsapp:${toExternalPhone}`;
   }
   return toExternalPhone;
+}
+
+function normalizeRecipient(value: string) {
+  return value.trim().replace(/^whatsapp:/i, "");
 }
 
 function trimTrailingSlash(value: string) {

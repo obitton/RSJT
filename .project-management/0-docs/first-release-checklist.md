@@ -23,7 +23,7 @@ Confirm these values before any non-local test:
 
 - `MESSAGING_OUTBOUND_ENABLED=false`
 - `REPAIRSHOPR_WRITEBACK_ENABLED=false`
-- `MESSAGING_TEST_RECIPIENT_ALLOWLIST` contains only test numbers.
+- MESSAGING_TEST_RECIPIENT_ALLOWLIST contains only test numbers, or is empty, which blocks every send.
 - `REPAIRSHOPR_WRITEBACK_TEST_RECORD_ALLOWLIST` contains only approved test records.
 - `.env` is not committed.
 - No live customer phone number is used in fixture tests.
