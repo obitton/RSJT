@@ -12,7 +12,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@expo/dom-webview": "^55.0.6",
     "@expo/log-box": "55.0.12",
     "@expo/metro-runtime": "^6.1.2",
     "@rsjt/shared": "workspace:^",
