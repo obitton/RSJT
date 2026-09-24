@@ -7,6 +7,7 @@ export * from "./domain/extraction.js";
 export * from "./domain/intake.js";
 export * from "./domain/job-money.js";
 export * from "./domain/jobs.js";
+export * from "./domain/json-date.js";
 export * from "./domain/matching.js";
 export * from "./domain/messaging.js";
 export * from "./domain/money.js";

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { JobSummarySchema } from "./jobs.js";
+import { JsonDateSchema } from "./json-date.js";
 
 export const ConversationMessageDirectionSchema = z.enum([
   "inbound",
@@ -26,20 +27,20 @@ export const ConversationMessageSchema = z.object({
   twilioMessageSid: z.string().min(1).nullable(),
   externalStatus: z.string().min(1).nullable(),
   sentByUserId: z.string().uuid().nullable(),
-  createdAt: z.date(),
+  createdAt: JsonDateSchema,
 });
 
 export const ConversationSummarySchema = z.object({
   id: z.string().uuid(),
   externalPhone: z.string().min(1).nullable(),
   takeoverActive: z.boolean(),
-  takeoverStartedAt: z.date().nullable(),
+  takeoverStartedAt: JsonDateSchema.nullable(),
   takeoverStartedByUserId: z.string().uuid().nullable(),
   intakeState: z.string().min(1),
   customerName: z.string().min(1).nullable(),
-  lastInboundAt: z.date().nullable(),
+  lastInboundAt: JsonDateSchema.nullable(),
   lastInboundPreview: z.string().min(1).nullable(),
-  updatedAt: z.date(),
+  updatedAt: JsonDateSchema,
 });
 
 export const ConversationDetailSchema = ConversationSummarySchema.extend({

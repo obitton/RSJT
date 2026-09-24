@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SourceEvidenceSchema } from "./jobs.js";
+import { JsonDateSchema } from "./json-date.js";
 import { UserRoleSchema } from "./users.js";
 
 export const ApprovalStateSchema = z.enum([
@@ -70,9 +71,9 @@ export const ApprovalRecordSchema = z.object({
   evidence: z.array(SourceEvidenceSchema),
   createdByUserId: z.string().uuid().nullable(),
   decidedByUserId: z.string().uuid().nullable(),
-  decidedAt: z.date().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  decidedAt: JsonDateSchema.nullable(),
+  createdAt: JsonDateSchema,
+  updatedAt: JsonDateSchema,
 });
 
 export const ApprovalListResponseSchema = z.object({

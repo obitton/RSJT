@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { JsonDateSchema } from "./json-date.js";
 
 const NumMediaSchema = z.coerce.number().int().min(0);
 
@@ -39,7 +40,7 @@ export const MessageMediaSchema = z.object({
   mediaIndex: z.number().int().min(0),
   contentType: z.string().min(1),
   url: z.string().url(),
-  createdAt: z.date(),
+  createdAt: JsonDateSchema,
 });
 
 export const MessagingWebhookEventKindSchema = z.enum([
@@ -52,7 +53,7 @@ export const MessagingWebhookEventSchema = z.object({
   eventType: MessagingWebhookEventKindSchema,
   twilioMessageSid: z.string().min(1).nullable(),
   payload: z.record(z.unknown()),
-  createdAt: z.date(),
+  createdAt: JsonDateSchema,
 });
 
 export const InboundMessageRecordSchema = z.object({
@@ -61,7 +62,7 @@ export const InboundMessageRecordSchema = z.object({
   twilioMessageSid: z.string().min(1),
   body: z.string(),
   media: z.array(MessageMediaSchema),
-  createdAt: z.date(),
+  createdAt: JsonDateSchema,
 });
 
 export type TwilioInboundWebhook = z.infer<typeof TwilioInboundWebhookSchema>;

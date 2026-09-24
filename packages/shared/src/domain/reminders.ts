@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { JobStateSchema } from "./jobs.js";
+import { JsonDateSchema } from "./json-date.js";
 
 export const ReminderReasonSchema = z.enum([
   "missing_completion",
@@ -20,8 +21,8 @@ export const ReminderSummarySchema = z.object({
   jobState: JobStateSchema,
   customerLabel: z.string().min(1).nullable(),
   reason: ReminderReasonSchema,
-  createdAt: z.date(),
-  resolvedAt: z.date().nullable(),
+  createdAt: JsonDateSchema,
+  resolvedAt: JsonDateSchema.nullable(),
   stale: z.boolean(),
 });
 

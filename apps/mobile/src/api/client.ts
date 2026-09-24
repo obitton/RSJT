@@ -1,44 +1,5 @@
-import {
-  isRecord,
-  toLoginResponse,
-  toSessionUser,
-} from "@/auth/session-validation";
-import {
-  toContactCardPreviewResponse,
-  toContactCardVcardResponse,
-} from "@/contact-cards/contact-card-validation";
-import {
-  toConversationDetailResponse,
-  toConversationListResponse,
-  toConvertLeadToJobResponse,
-  toSendConversationMessageResponse,
-} from "@/conversations/conversation-validation";
-import {
-  toManagerDashboardResponse,
-  toManagerJobDetailResponse,
-  toManagerLeadDetailResponse,
-} from "@/dashboard/dashboard-validation";
-import {
-  toCancelJobResponse,
-  toJobUpdateFeedResponse,
-  toUpdateExtractionResponse,
-} from "@/jobs/job-validation";
-import { toJobMoneyResponse } from "@/money/money-validation";
-import {
-  toReminderGenerationResponse,
-  toReminderListResponse,
-  toResolveReminderResponse,
-} from "@/reminders/reminder-validation";
-import {
-  toSchedulingDecisionResponse,
-  toSchedulingProposalDetailResponse,
-  toSchedulingProposalListResponse,
-} from "@/scheduling/scheduling-validation";
-import {
-  toWritebackExecutionListResponse,
-  toWritebackExecutionResponse,
-} from "@/writebacks/writeback-validation";
 import type {
+  AuthSessionResponse,
   CancelJobResponse,
   ContactCardPreviewResponse,
   ContactCardVcardResponse,
@@ -63,7 +24,6 @@ import type {
   SchedulingProposalListResponse,
   SendConversationMessageRequest,
   SendConversationMessageResponse,
-  SessionUser,
   SetTakeoverRequest,
   UpdateExtractionRequest,
   UpdateExtractionResponse,
@@ -72,12 +32,33 @@ import type {
   WritebackExecutionListResponse,
   WritebackExecutionResponse,
 } from "@rsjt/shared";
+import {
+  AuthSessionResponseSchema,
+  CancelJobResponseSchema,
+  ContactCardPreviewResponseSchema,
+  ContactCardVcardResponseSchema,
+  ConversationDetailResponseSchema,
+  ConversationListResponseSchema,
+  ConvertLeadToJobResponseSchema,
+  JobMoneyResponseSchema,
+  JobUpdateFeedResponseSchema,
+  LoginResponseSchema,
+  ManagerDashboardResponseSchema,
+  ManagerJobDetailResponseSchema,
+  ManagerLeadDetailResponseSchema,
+  ReminderGenerationResponseSchema,
+  ReminderListResponseSchema,
+  ResolveReminderResponseSchema,
+  SchedulingDecisionResponseSchema,
+  SchedulingProposalDetailResponseSchema,
+  SchedulingProposalListResponseSchema,
+  SendConversationMessageResponseSchema,
+  UpdateExtractionResponseSchema,
+  WritebackExecutionListResponseSchema,
+  WritebackExecutionResponseSchema,
+} from "@rsjt/shared";
 
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:47630";
-
-export type AuthSessionResponse = {
-  user: SessionUser;
-};
 
 export class ApiError extends Error {
   constructor(
@@ -613,211 +594,105 @@ function parseErrorPayload(text: string) {
   }
 }
 
-function parseLoginResponse(payload: unknown) {
-  const result = toLoginResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected login response", payload);
-  }
+type ResponseSchema<T> = {
+  safeParse: (
+    value: unknown,
+  ) => { success: true; data: T } | { success: false; error: unknown };
+};
 
-  return result;
+function parseWith<T>(label: string, schema: ResponseSchema<T>) {
+  return (payload: unknown): T => {
+    const result = schema.safeParse(payload);
+    if (!result.success) {
+      throw new ApiError(0, `Unexpected ${label} response`, payload);
+    }
+    return result.data;
+  };
 }
 
-function parseAuthSessionResponse(payload: unknown): AuthSessionResponse {
-  if (!isRecord(payload)) {
-    throw new ApiError(0, "Unexpected session response", payload);
-  }
-
-  const user = toSessionUser(payload.user);
-  if (!user) {
-    throw new ApiError(0, "Unexpected session response", payload);
-  }
-
-  return { user };
-}
-
-function parseJobUpdateFeedResponse(payload: unknown) {
-  const result = toJobUpdateFeedResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected job update feed response", payload);
-  }
-
-  return result;
-}
-
-function parseUpdateExtractionResponse(payload: unknown) {
-  const result = toUpdateExtractionResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected update extraction response", payload);
-  }
-
-  return result;
-}
-
-function parseJobMoneyResponse(payload: unknown) {
-  const result = toJobMoneyResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected job money response", payload);
-  }
-
-  return result;
-}
-
-function parseReminderListResponse(payload: unknown) {
-  const result = toReminderListResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected reminder list response", payload);
-  }
-
-  return result;
-}
-
-function parseReminderGenerationResponse(payload: unknown) {
-  const result = toReminderGenerationResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected reminder generation response", payload);
-  }
-
-  return result;
-}
-
-function parseResolveReminderResponse(payload: unknown) {
-  const result = toResolveReminderResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected resolve reminder response", payload);
-  }
-
-  return result;
-}
-
-function parseCancelJobResponse(payload: unknown) {
-  const result = toCancelJobResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected cancel job response", payload);
-  }
-
-  return result;
-}
-
-function parseManagerDashboardResponse(payload: unknown) {
-  const result = toManagerDashboardResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected manager dashboard response", payload);
-  }
-
-  return result;
-}
-
-function parseManagerJobDetailResponse(payload: unknown) {
-  const result = toManagerJobDetailResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected manager job detail response", payload);
-  }
-
-  return result;
-}
-
-function parseManagerLeadDetailResponse(payload: unknown) {
-  const result = toManagerLeadDetailResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected manager lead detail response", payload);
-  }
-
-  return result;
-}
-
-function parseContactCardPreviewResponse(payload: unknown) {
-  const result = toContactCardPreviewResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected contact card preview response", payload);
-  }
-
-  return result;
-}
-
-function parseContactCardVcardResponse(payload: unknown) {
-  const result = toContactCardVcardResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected contact card vCard response", payload);
-  }
-
-  return result;
-}
-
-function parseConversationListResponse(payload: unknown) {
-  const result = toConversationListResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected conversation list response", payload);
-  }
-  return result;
-}
-
-function parseConversationDetailResponse(payload: unknown) {
-  const result = toConversationDetailResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected conversation detail response", payload);
-  }
-  return result;
-}
-
-function parseSendConversationMessageResponse(payload: unknown) {
-  const result = toSendConversationMessageResponse(payload);
-  if (!result) {
-    throw new ApiError(
-      0,
-      "Unexpected send conversation message response",
-      payload,
-    );
-  }
-  return result;
-}
-
-function parseConvertLeadToJobResponse(payload: unknown) {
-  const result = toConvertLeadToJobResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected convert lead to job response", payload);
-  }
-  return result;
-}
-
-function parseSchedulingProposalListResponse(payload: unknown) {
-  const result = toSchedulingProposalListResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected scheduling list response", payload);
-  }
-  return result;
-}
-
-function parseSchedulingProposalDetailResponse(payload: unknown) {
-  const result = toSchedulingProposalDetailResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected scheduling detail response", payload);
-  }
-  return result;
-}
-
-function parseSchedulingDecisionResponse(payload: unknown) {
-  const result = toSchedulingDecisionResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected scheduling decision response", payload);
-  }
-  return result;
-}
-
-function parseWritebackExecutionListResponse(payload: unknown) {
-  const result = toWritebackExecutionListResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected writeback list response", payload);
-  }
-  return result;
-}
-
-function parseWritebackExecutionResponse(payload: unknown) {
-  const result = toWritebackExecutionResponse(payload);
-  if (!result) {
-    throw new ApiError(0, "Unexpected writeback response", payload);
-  }
-  return result;
-}
+const parseLoginResponse = parseWith("login", LoginResponseSchema);
+const parseAuthSessionResponse = parseWith(
+  "session",
+  AuthSessionResponseSchema,
+);
+const parseJobUpdateFeedResponse = parseWith(
+  "job update feed",
+  JobUpdateFeedResponseSchema,
+);
+const parseUpdateExtractionResponse = parseWith(
+  "update extraction",
+  UpdateExtractionResponseSchema,
+);
+const parseJobMoneyResponse = parseWith("job money", JobMoneyResponseSchema);
+const parseReminderListResponse = parseWith(
+  "reminder list",
+  ReminderListResponseSchema,
+);
+const parseReminderGenerationResponse = parseWith(
+  "reminder generation",
+  ReminderGenerationResponseSchema,
+);
+const parseResolveReminderResponse = parseWith(
+  "resolve reminder",
+  ResolveReminderResponseSchema,
+);
+const parseCancelJobResponse = parseWith("cancel job", CancelJobResponseSchema);
+const parseManagerDashboardResponse = parseWith(
+  "manager dashboard",
+  ManagerDashboardResponseSchema,
+);
+const parseManagerJobDetailResponse = parseWith(
+  "manager job detail",
+  ManagerJobDetailResponseSchema,
+);
+const parseManagerLeadDetailResponse = parseWith(
+  "manager lead detail",
+  ManagerLeadDetailResponseSchema,
+);
+const parseContactCardPreviewResponse = parseWith(
+  "contact card preview",
+  ContactCardPreviewResponseSchema,
+);
+const parseContactCardVcardResponse = parseWith(
+  "contact card vCard",
+  ContactCardVcardResponseSchema,
+);
+const parseConversationListResponse = parseWith(
+  "conversation list",
+  ConversationListResponseSchema,
+);
+const parseConversationDetailResponse = parseWith(
+  "conversation detail",
+  ConversationDetailResponseSchema,
+);
+const parseSendConversationMessageResponse = parseWith(
+  "send conversation message",
+  SendConversationMessageResponseSchema,
+);
+const parseConvertLeadToJobResponse = parseWith(
+  "convert lead to job",
+  ConvertLeadToJobResponseSchema,
+);
+const parseSchedulingProposalListResponse = parseWith(
+  "scheduling list",
+  SchedulingProposalListResponseSchema,
+);
+const parseSchedulingProposalDetailResponse = parseWith(
+  "scheduling detail",
+  SchedulingProposalDetailResponseSchema,
+);
+const parseSchedulingDecisionResponse = parseWith(
+  "scheduling decision",
+  SchedulingDecisionResponseSchema,
+);
+const parseWritebackExecutionListResponse = parseWith(
+  "writeback list",
+  WritebackExecutionListResponseSchema,
+);
+const parseWritebackExecutionResponse = parseWith(
+  "writeback",
+  WritebackExecutionResponseSchema,
+);
 
 function writebackQuery(filters: WritebackExecutionListQuery) {
   const params = new URLSearchParams();
@@ -844,4 +719,8 @@ function getErrorMessage(payload: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

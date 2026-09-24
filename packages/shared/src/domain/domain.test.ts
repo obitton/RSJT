@@ -12,6 +12,7 @@ import {
   ExpenseCategorySchema,
   ExtractedFactSchema,
   JobMoneyResponseSchema,
+  JsonDateSchema,
   ManagerDashboardResponseSchema,
   ManagerJobDetailResponseSchema,
   MatchConfidenceThresholds,
@@ -32,6 +33,73 @@ import {
   extractTwilioMediaItems,
   isCancelableJobState,
 } from "../index.js";
+
+function validDashboardFixture() {
+  const jobId = "00000000-0000-4000-8000-000000010101";
+  const conversationId = "00000000-0000-4000-8000-000000020101";
+  const updatedAt = new Date("2026-05-22T12:00:00.000Z");
+
+  return {
+    summary: {
+      leadsCount: 1,
+      needsTechAnswerCount: 0,
+      workingOnCount: 1,
+      jobsCount: 0,
+      repairCount: 0,
+      openCount: 1,
+      scheduledCount: 0,
+      completedCount: 0,
+      unmatchedCount: 1,
+      takeoverCount: 1,
+      payoutReadyCount: 0,
+    },
+    groups: {
+      jobs: [
+        {
+          id: jobId,
+          state: "accepted",
+          origin: "lead",
+          customerLabel: "Local laptop repair",
+          updatedAt,
+          grossChargeCents: 18000,
+          pendingApprovalCount: 1,
+          selectedMatchConfidenceBand: "high",
+        },
+        {
+          id: "00000000-0000-4000-8000-000000010103",
+          state: "unmatched",
+          origin: "manual",
+          originNote: "Walk-in customer update.",
+          customerLabel: "Unmatched walk-in update",
+          updatedAt,
+          pendingApprovalCount: 0,
+        },
+      ],
+      payout: [],
+      completed: [],
+      canceled: [
+        {
+          id: "00000000-0000-4000-8000-000000010104",
+          state: "canceled",
+          origin: "manual",
+          customerLabel: "Canceled job",
+          updatedAt,
+          pendingApprovalCount: 0,
+        },
+      ],
+    },
+    leads: [],
+    takeoverConversations: [
+      {
+        id: conversationId,
+        externalPhone: "+15555550100",
+        takeoverActive: true,
+        takeoverStartedAt: updatedAt,
+        updatedAt,
+      },
+    ],
+  };
+}
 
 describe("domain contracts", () => {
   it("does not include travel as a deductible expense category", () => {
@@ -144,70 +212,9 @@ describe("domain contracts", () => {
   });
 
   it("parses a manager dashboard response with groups and takeover", () => {
-    const jobId = "00000000-0000-4000-8000-000000010101";
-    const conversationId = "00000000-0000-4000-8000-000000020101";
-    const updatedAt = new Date("2026-05-22T12:00:00.000Z");
-
-    const response = ManagerDashboardResponseSchema.parse({
-      summary: {
-        leadsCount: 1,
-        needsTechAnswerCount: 0,
-        workingOnCount: 1,
-        jobsCount: 0,
-        repairCount: 0,
-        openCount: 1,
-        scheduledCount: 0,
-        completedCount: 0,
-        unmatchedCount: 1,
-        takeoverCount: 1,
-        payoutReadyCount: 0,
-      },
-      groups: {
-        jobs: [
-          {
-            id: jobId,
-            state: "accepted",
-            origin: "lead",
-            customerLabel: "Local laptop repair",
-            updatedAt,
-            grossChargeCents: 18000,
-            pendingApprovalCount: 1,
-            selectedMatchConfidenceBand: "high",
-          },
-          {
-            id: "00000000-0000-4000-8000-000000010103",
-            state: "unmatched",
-            origin: "manual",
-            originNote: "Walk-in customer update.",
-            customerLabel: "Unmatched walk-in update",
-            updatedAt,
-            pendingApprovalCount: 0,
-          },
-        ],
-        payout: [],
-        completed: [],
-        canceled: [
-          {
-            id: "00000000-0000-4000-8000-000000010104",
-            state: "canceled",
-            origin: "manual",
-            customerLabel: "Canceled job",
-            updatedAt,
-            pendingApprovalCount: 0,
-          },
-        ],
-      },
-      leads: [],
-      takeoverConversations: [
-        {
-          id: conversationId,
-          externalPhone: "+15555550100",
-          takeoverActive: true,
-          takeoverStartedAt: updatedAt,
-          updatedAt,
-        },
-      ],
-    });
+    const response = ManagerDashboardResponseSchema.parse(
+      validDashboardFixture(),
+    );
 
     expect(response.summary.openCount).toBe(1);
     expect(response.groups.jobs[0]?.state).toBe("accepted");
@@ -809,5 +816,35 @@ describe("domain contracts", () => {
         ],
       }).success,
     ).toBe(false);
+  });
+  it("parses a Date with JsonDateSchema to an equal Date", () => {
+    const value = new Date("2026-05-20T12:00:00.000Z");
+
+    const parsed = JsonDateSchema.parse(value);
+
+    expect(parsed).toBeInstanceOf(Date);
+    expect(parsed.getTime()).toBe(value.getTime());
+  });
+
+  it("parses an ISO string with JsonDateSchema to a Date at that instant", () => {
+    const parsed = JsonDateSchema.parse("2026-05-20T12:00:00.000Z");
+
+    expect(parsed).toBeInstanceOf(Date);
+    expect(parsed.toISOString()).toBe("2026-05-20T12:00:00.000Z");
+  });
+
+  it("rejects a non-date string with JsonDateSchema", () => {
+    expect(JsonDateSchema.safeParse("not a date").success).toBe(false);
+  });
+
+  it("parses a manager dashboard response after a JSON round trip", () => {
+    const response = ManagerDashboardResponseSchema.parse(
+      JSON.parse(JSON.stringify(validDashboardFixture())),
+    );
+
+    expect(response.groups.jobs[0]?.updatedAt).toBeInstanceOf(Date);
+    expect(response.takeoverConversations[0]?.takeoverStartedAt).toEqual(
+      new Date("2026-05-22T12:00:00.000Z"),
+    );
   });
 });

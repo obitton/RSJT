@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MatchConfidenceBandSchema } from "./confidence.js";
+import { JsonDateSchema } from "./json-date.js";
 import { RepairShoprReferenceSchema } from "./repairshopr.js";
 
 export const CustomerIntakeStateSchema = z.enum([
@@ -35,8 +36,8 @@ export const CustomerIntakeSnapshotSchema = z.object({
   matchedConfidenceBand: MatchConfidenceBandSchema.nullable(),
   takeoverActive: z.boolean().default(false),
   lastInboundMessageId: z.string().uuid().nullable(),
-  lastInboundAt: z.date().nullable(),
-  updatedAt: z.date(),
+  lastInboundAt: JsonDateSchema.nullable(),
+  updatedAt: JsonDateSchema,
 });
 
 export const CustomerIntakePromptSchema = z.object({

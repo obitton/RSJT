@@ -1,4 +1,4 @@
-import { createApiClient } from "@/api/client";
+import { ApiError, createApiClient } from "@/api/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const jobId = "00000000-0000-4000-8000-000000200001";
@@ -61,6 +61,32 @@ describe("mobile critical path smoke", () => {
       `GET /manager/conversations/${conversationId}/contact-card/preview`,
       `POST /manager/jobs/${jobId}/split-override`,
     ]);
+  });
+
+  it("rejects a manager dashboard response that breaks the shared schema", async () => {
+    vi.stubGlobal(
+      "fetch",
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const url = toUrl(input);
+        const method = init?.method ?? "GET";
+        const found = method === "GET" && url.pathname === "/manager/dashboard";
+        return new Response(
+          JSON.stringify(found ? { summary: {} } : { error: "Not found" }),
+          {
+            status: found ? 200 : 404,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      },
+    );
+    const client = createApiClient("https://local.test");
+
+    const result = client.getManagerDashboard(token);
+
+    await expect(result).rejects.toBeInstanceOf(ApiError);
+    await expect(result).rejects.toThrow(
+      "Unexpected manager dashboard response",
+    );
   });
 });
 
